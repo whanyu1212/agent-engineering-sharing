@@ -1,0 +1,142 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="harness-examples" title="ADK harness examples">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Harness examples</p>
+      <h1>Google ADK makes the harness visible.</h1>
+      <p>
+        ADK separates the runtime pieces clearly: the runner executes turns,
+        session services hold state and events, confirmations gate risky tools,
+        and eval files make trajectories testable.
+      </p>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span>Runner</span>
+        <h3>Execution loop as an object.</h3>
+        <p>
+          The <code>Runner</code> is the entry point for an invocation. It
+          connects an agent to session, memory, artifact, and credential
+          services.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Confirmations</span>
+        <h3>Human gates become part of runtime.</h3>
+        <p>
+          ADK can pause a tool call and request confirmation before executing
+          high-impact actions like refunds, work orders, or production changes.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Evals</span>
+        <h3>Tool trajectories become assertions.</h3>
+        <p>
+          ADK eval files can encode not only the final response, but also the
+          expected tool-use path the harness should produce.
+        </p>
+      </article>
+    </div>
+
+    <div class="code-grid">
+      <figure class="code-card">
+        <figcaption>
+          <span>adk_runner_session.py</span>
+          <a href="https://adk.dev/runtime/event-loop/" target="_blank" rel="noreferrer">ADK event loop</a>
+        </figcaption>
+        <pre><code>from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+session_service = InMemorySessionService()
+
+runner = Runner(
+    agent=root_agent,
+    app_name="maintenance_agent",
+    session_service=session_service,
+)
+
+await session_service.create_session(
+    app_name="maintenance_agent",
+    user_id="operator-7",
+    session_id="shift-a",
+    state=dict(line="press-2", machine_id="M-42"),
+)
+
+message = types.Content(
+    role="user",
+    parts=[types.Part(text="Diagnose alarm E118 on M-42")],
+)
+
+async for event in runner.run_async(
+    user_id="operator-7",
+    session_id="shift-a",
+    new_message=message,
+):
+    if event.is_final_response():
+        print(event.content.parts[0].text)</code></pre>
+      </figure>
+
+      <figure class="code-card">
+        <figcaption>
+          <span>adk_control_points.py</span>
+          <a href="https://adk.dev/tools-custom/confirmation/" target="_blank" rel="noreferrer">ADK confirmations</a>
+        </figcaption>
+        <pre><code>from google.adk.agents import Agent
+from google.adk.tools import FunctionTool
+
+root_agent = Agent(
+    model="gemini-flash-latest",
+    name="maintenance_agent",
+    instruction=(
+        "Diagnose manufacturing issues. "
+        "Never create work orders without confirmation."
+    ),
+    tools=[
+        read_alarm_history,
+        fetch_sensor_window,
+        FunctionTool(create_work_order, require_confirmation=True),
+    ],
+)</code></pre>
+      </figure>
+
+      <figure class="code-card">
+        <figcaption>
+          <span>adk_eval_case.test.json</span>
+          <a href="https://adk.dev/evaluate/" target="_blank" rel="noreferrer">ADK evals</a>
+        </figcaption>
+        <pre><code>&#123;
+  "eval_set_id": "manufacturing_diagnostics",
+  "eval_cases": [
+    &#123;
+      "eval_id": "alarm_e118_requires_diagnostics",
+      "conversation": [
+        &#123;
+          "user_content": &#123;
+            "parts": [&#123; "text": "Machine M-42 has alarm E118." &#125;],
+            "role": "user"
+          &#125;,
+          "final_response": &#123;
+            "parts": [&#123; "text": "I checked recent alarms and sensor windows." &#125;],
+            "role": "model"
+          &#125;,
+          "intermediate_data": &#123;
+            "tool_uses": [
+              &#123; "name": "read_alarm_history" &#125;,
+              &#123; "name": "fetch_sensor_window" &#125;
+            ],
+            "intermediate_responses": []
+          &#125;
+        &#125;
+      ]
+    &#125;
+  ]
+&#125;</code></pre>
+      </figure>
+    </div>
+  </section>
+</SiteLayout>

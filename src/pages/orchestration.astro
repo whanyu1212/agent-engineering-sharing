@@ -1,0 +1,141 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="orchestration" title="ReAct vs graph orchestration">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Orchestration choice</p>
+      <h1>ReAct loop vs graph / state machine</h1>
+      <p>Same ingredients. Different control surface.</p>
+    </div>
+
+    <div class="compare-grid">
+      <article class="compare-card">
+        <div class="card-head">
+          <span class="card-label">Flexible</span>
+          <div>
+            <h3>ReAct loop</h3>
+            <p>Reason → Act → Observe → Repeat</p>
+          </div>
+        </div>
+        <div class="mini-diagram react-diagram" aria-label="ReAct loop diagram">
+          <svg viewBox="0 0 520 176" role="img" aria-labelledby="react-title">
+            <title id="react-title">ReAct loop: reason, act, observe, then repeat</title>
+            <defs>
+              <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+                <path d="M0,0 L8,4 L0,8 Z"></path>
+              </marker>
+            </defs>
+            <g class="react-links">
+              <path d="M 162 52 H 218"></path>
+              <path d="M 302 52 H 358"></path>
+              <path d="M 406 74 C 406 122, 114 122, 114 76"></path>
+            </g>
+            <g class="react-node-svg">
+              <rect x="58" y="30" width="104" height="44" rx="22"></rect>
+              <text x="110" y="56">reason</text>
+            </g>
+            <g class="react-node-svg">
+              <rect x="218" y="30" width="84" height="44" rx="22"></rect>
+              <text x="260" y="56">act</text>
+            </g>
+            <g class="react-node-svg">
+              <rect x="358" y="30" width="104" height="44" rx="22"></rect>
+              <text x="410" y="56">observe</text>
+            </g>
+            <text class="loop-caption" x="260" y="134">model decides the next step each turn</text>
+          </svg>
+        </div>
+        <ul>
+          <li>Minimal orchestration</li>
+          <li>Great for open-ended exploration</li>
+          <li>Model decides the next step each turn</li>
+          <li>Harder to guarantee path, retries, or state</li>
+        </ul>
+      </article>
+
+      <article class="compare-card graph-card">
+        <div class="card-head">
+          <span class="card-label">Structured</span>
+          <div>
+            <h3>Graph / state machine</h3>
+            <p>Nodes + edges + typed transitions</p>
+          </div>
+        </div>
+        <div class="mini-diagram graph-diagram" aria-label="Graph state machine diagram">
+          <svg viewBox="0 0 520 176" role="img" aria-labelledby="graph-title">
+            <title id="graph-title">Graph state machine: start, route, tool, check, recover, and done</title>
+            <defs>
+              <marker id="graph-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+                <path d="M0,0 L8,4 L0,8 Z"></path>
+              </marker>
+            </defs>
+            <g class="graph-links">
+              <path d="M 90 48 H 152"></path>
+              <path d="M 248 48 H 310"></path>
+              <path d="M 390 48 H 430"></path>
+              <path d="M 350 70 V 104"></path>
+              <path d="M 310 126 H 210"></path>
+              <path d="M 152 126 H 90 V 72"></path>
+            </g>
+            <g class="graph-node-svg">
+              <rect x="24" y="26" width="66" height="44" rx="22"></rect>
+              <text x="57" y="52">start</text>
+            </g>
+            <g class="graph-node-svg">
+              <rect x="152" y="26" width="96" height="44" rx="22"></rect>
+              <text x="200" y="52">route</text>
+            </g>
+            <g class="graph-node-svg">
+              <rect x="310" y="26" width="80" height="44" rx="22"></rect>
+              <text x="350" y="52">tool</text>
+            </g>
+            <g class="graph-node-svg">
+              <rect x="430" y="26" width="66" height="44" rx="22"></rect>
+              <text x="463" y="52">done</text>
+            </g>
+            <g class="graph-node-svg is-recover">
+              <rect x="90" y="104" width="120" height="44" rx="22"></rect>
+              <text x="150" y="130">recover</text>
+            </g>
+            <g class="graph-node-svg is-done">
+              <rect x="310" y="104" width="80" height="44" rx="22"></rect>
+              <text x="350" y="130">check</text>
+            </g>
+          </svg>
+        </div>
+        <ul>
+          <li>Explicit workflow structure</li>
+          <li>Great for production flows</li>
+          <li>System decides valid transitions</li>
+          <li>Easier to test, resume, inspect, and recover</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="when-panel">
+      <h3>Use which when?</h3>
+      <div>
+        <article>
+          <span>Use ReAct when</span>
+          <strong>the task is ambiguous, exploratory, or tool choice is unknown upfront.</strong>
+          <ul class="use-cases">
+            <li>Research assistant that searches, reads, and synthesizes unfamiliar topics.</li>
+            <li>Debugging assistant exploring logs, code, tests, and docs to find root cause.</li>
+            <li>Travel planner that compares options, checks constraints, and revises an itinerary.</li>
+          </ul>
+        </article>
+        <article>
+          <span>Use graphs when</span>
+          <strong>the workflow has known states, constraints, retries, or handoffs.</strong>
+          <ul class="use-cases">
+            <li>Customer support triage with escalation, refund, and compliance paths.</li>
+            <li>Code review pipeline with lint, test, patch, approval, and rollback states.</li>
+            <li>Manufacturing diagnostics that step through alarms, sensor checks, and escalation paths.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+</SiteLayout>

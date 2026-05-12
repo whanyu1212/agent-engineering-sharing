@@ -1,0 +1,156 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="eval-observability" title="Agent eval and observability">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Production feedback loop</p>
+      <h1>Agent eval and observability</h1>
+      <p>
+        Once agents can use tools, the engineering problem shifts from
+        capability to confidence: can we see what happened, replay it, and
+        measure whether the agent behaved correctly?
+      </p>
+    </div>
+
+    <div class="feedback-grid">
+      <article class="feedback-card trace-card">
+        <span>Observability</span>
+        <h3>Trace every decision boundary.</h3>
+        <ul>
+          <li>User goal and retrieved context</li>
+          <li>Model reasoning summary and selected action</li>
+          <li>Tool name, arguments, latency, result, and error</li>
+          <li>Retries, fallbacks, approvals, and final response</li>
+        </ul>
+      </article>
+
+      <article class="feedback-card eval-card">
+        <span>Evaluation</span>
+        <h3>Test the behavior, not just the answer.</h3>
+        <ul>
+          <li>Did it choose the right tool?</li>
+          <li>Were the arguments valid and minimal?</li>
+          <li>Did it handle failure without hallucinating?</li>
+          <li>Did it stop, escalate, or ask a good question?</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="signal-panel">
+      <h3>What to measure</h3>
+      <div>
+        <article>
+          <span>Task quality</span>
+          <strong>success rate, groundedness, completeness, user correction rate</strong>
+        </article>
+        <article>
+          <span>Tool behavior</span>
+          <strong>tool choice accuracy, schema errors, retry rate, side-effect safety</strong>
+        </article>
+        <article>
+          <span>Runtime health</span>
+          <strong>latency, cost, token use, timeout rate, failure clusters</strong>
+        </article>
+      </div>
+    </div>
+
+    <div class="examples-section">
+      <div class="section-head compact-head">
+        <p class="eyebrow">Example tools</p>
+        <h2>Different ways teams close the feedback loop.</h2>
+      </div>
+
+      <div class="example-grid">
+        <a class="example-card" href="https://adk.dev/evaluate/" target="_blank" rel="noreferrer">
+          <div class="example-media">
+            <img
+              src="/images/eval-tools/adk-evaluate-agent.png"
+              alt="Google ADK agent evaluation components"
+              loading="lazy"
+            />
+          </div>
+          <div class="example-content">
+            <span>Native framework eval</span>
+            <h3>Google ADK eval</h3>
+            <p>
+              Built around eval cases, expected trajectories, tool-use checks,
+              and running evaluations through web, pytest, or CLI workflows.
+            </p>
+          </div>
+        </a>
+
+        <a class="example-card" href="https://www.comet.com/docs/opik" target="_blank" rel="noreferrer">
+          <div class="example-media">
+            <img
+              src="/images/eval-tools/opik-tracing.png"
+              alt="Opik trace logging interface"
+              loading="lazy"
+            />
+          </div>
+          <div class="example-content">
+            <span>Observability plus evals</span>
+            <h3>Opik</h3>
+            <p>
+              Open-source logging, debugging, scoring, and optimization for
+              LLM apps and agents across development, testing, and production.
+            </p>
+          </div>
+        </a>
+
+        <a class="example-card" href="https://langfuse.com/" target="_blank" rel="noreferrer">
+          <div class="example-media">
+            <img
+              src="/images/eval-tools/langfuse-observability.png"
+              alt="Langfuse observability trace view"
+              loading="lazy"
+            />
+          </div>
+          <div class="example-content">
+            <span>LLM engineering platform</span>
+            <h3>Langfuse</h3>
+            <p>
+              Traces, prompts, evaluations, experiments, metrics, and human
+              review in one OpenTelemetry-based workflow.
+            </p>
+          </div>
+        </a>
+
+        <a class="example-card" href="https://arize.com/docs/phoenix" target="_blank" rel="noreferrer">
+          <div class="example-media">
+            <img
+              src="/images/eval-tools/phoenix-evals.png"
+              alt="Arize Phoenix evaluation interface"
+              loading="lazy"
+            />
+          </div>
+          <div class="example-content">
+            <span>Open-source tracing and evals</span>
+            <h3>Arize Phoenix</h3>
+            <p>
+              Trace inspection, datasets, experiments, LLM-as-judge evals, and
+              OpenTelemetry/OpenInference instrumentation.
+            </p>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <figure class="code-card">
+      <figcaption>
+        <span>agent_eval_case.json</span>
+        <span>shape</span>
+      </figcaption>
+      <pre><code>&#123;
+  "input": "Machine M-42 has alarm E118. What should we check?",
+  "expected_tools": ["read_alarm_history", "fetch_sensor_window"],
+  "assertions": [
+    "uses recent machine context",
+    "does not recommend shutdown without evidence",
+    "asks for technician approval before work order creation"
+  ]
+&#125;</code></pre>
+    </figure>
+  </section>
+</SiteLayout>

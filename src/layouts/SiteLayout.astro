@@ -1,0 +1,58 @@
+---
+import '../styles/page.css';
+
+const {
+  current = 'overview',
+  description = 'Opinionated agent engineering sharing by Hanyu.',
+  title = 'Opinionated Agent Engineering Sharing',
+} = Astro.props;
+
+const navItems = [
+  { key: 'overview', href: '/', label: 'Overview', kicker: 'Start' },
+  { key: 'agent', href: '/what-is-agent/', label: 'What is an agent?', kicker: '01' },
+  { key: 'orchestration', href: '/orchestration/', label: 'ReAct vs graph', kicker: '02' },
+  { key: 'practice', href: '/engineering-practice/', label: 'Tools & capability', kicker: '03' },
+  { key: 'function-tools', href: '/function-tools/', label: 'Function tools', kicker: '03A' },
+  { key: 'skills', href: '/skills/', label: 'Skills', kicker: '03B' },
+  { key: 'code-execution', href: '/code-execution/', label: 'Code execution', kicker: '03C' },
+  { key: 'eval-observability', href: '/eval-observability/', label: 'Eval & observability', kicker: '04' },
+  { key: 'harness-engineering', href: '/harness-engineering/', label: 'Harness concept', kicker: '05' },
+  { key: 'harness-examples', href: '/harness-examples/', label: 'ADK harness examples', kicker: '05A' },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <div class="site-shell">
+      <aside class="side-nav" aria-label="Section navigation">
+        <a class="brand" href="/">
+          <span>Opinionated</span>
+          <strong>Agent Engineering</strong>
+        </a>
+        <nav>
+          {navItems.map((item) => (
+            <a
+              class={current === item.key ? 'is-active' : ''}
+              href={item.href}
+              aria-current={current === item.key ? 'page' : undefined}
+            >
+              <span>{item.kicker}</span>
+              <strong>{item.label}</strong>
+            </a>
+          ))}
+        </nav>
+        <p class="nav-credit">by Hanyu</p>
+      </aside>
+
+      <main class="content-shell">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>

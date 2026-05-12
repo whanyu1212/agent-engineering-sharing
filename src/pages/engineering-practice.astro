@@ -1,0 +1,72 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="practice" title="Tools: the real source of agent capability">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Agent capability</p>
+      <h1>Tools: the real source of agent capability</h1>
+      <p>
+        A tool is any controlled interface that lets the model read fresh state
+        or change the outside world. Different tool forms create different
+        capability boundaries.
+      </p>
+    </div>
+
+    <div class="tools-grid">
+      <a class="tool-card is-featured" href="/function-tools/">
+        <span class="tool-star" aria-label="Deep dive">*</span>
+        <span class="tool-kind">Typed action</span>
+        <h3>Function tools</h3>
+        <p>
+          Small, explicit functions with schemas. Best for narrow actions like
+          creating a ticket, validating an order, or checking machine status.
+        </p>
+      </a>
+      <article class="tool-card">
+        <span class="tool-kind">Shared interface</span>
+        <h3>MCP servers</h3>
+        <p>
+          External capability providers that expose tools, resources, and
+          prompts. Useful when integrations need auth, state, or reuse across
+          agents.
+        </p>
+      </article>
+      <a class="tool-card is-featured" href="/skills/">
+        <span class="tool-star" aria-label="Deep dive">*</span>
+        <span class="tool-kind">Packaged procedure</span>
+        <h3>Skills</h3>
+        <p>
+          Repeatable playbooks with instructions, scripts, templates, and
+          examples. Good for domain workflows that need consistent execution.
+        </p>
+      </a>
+      <a class="tool-card is-featured" href="/code-execution/">
+        <span class="tool-star" aria-label="Deep dive">*</span>
+        <span class="tool-kind">Runtime feedback</span>
+        <h3>Code execution</h3>
+        <p>
+          A sandbox for calculating, transforming files, running tests, and
+          inspecting repos. Powerful because observations are concrete.
+        </p>
+      </a>
+      <article class="tool-card">
+        <span class="tool-kind">Grounding</span>
+        <h3>Search and retrieval</h3>
+        <p>
+          Web search, docs lookup, vector search, and database queries. These
+          tools keep decisions tied to current or private information.
+        </p>
+      </article>
+      <article class="tool-card">
+        <span class="tool-kind">Control point</span>
+        <h3>Human handoff</h3>
+        <p>
+          Approval, review, escalation, and override are tools too. They keep
+          high-risk actions inside an inspectable operating model.
+        </p>
+      </article>
+    </div>
+  </section>
+</SiteLayout>

@@ -1,0 +1,71 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="function-tools" title="Function tools">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03A</p>
+      <h1>Function tools turn intent into typed actions.</h1>
+      <p>
+        They are the narrowest useful tool form: a named operation, a schema,
+        a predictable result, and a clear failure mode.
+      </p>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span>Use when</span>
+        <h3>The action is bounded.</h3>
+        <p>
+          The model should choose parameters, not invent the implementation.
+          Good examples: create ticket, check inventory, validate serial number,
+          calculate quote, or fetch machine status.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Design for</span>
+        <h3>Contracts and recovery.</h3>
+        <p>
+          Keep inputs typed, outputs structured, errors explicit, and side
+          effects idempotent. A failed tool call should become useful context
+          for the next decision.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Avoid</span>
+        <h3>Generic escape hatches.</h3>
+        <p>
+          A function named <code>do_task</code> with a raw prompt argument is
+          not a contract. Split it into smaller operations the system can test,
+          trace, retry, and permission.
+        </p>
+      </article>
+    </div>
+
+    <figure class="code-card">
+      <figcaption>
+        <span>google_adk_function_tool.py</span>
+        <a href="https://adk.dev/tools-custom/function-tools/" target="_blank" rel="noreferrer">Google ADK docs</a>
+      </figcaption>
+      <pre><code>from google.adk.agents import Agent
+
+def check_machine_status(machine_id: str) -> dict:
+    """Return current alarm, mode, and last-seen timestamp."""
+    status = mes_client.get_machine(machine_id)
+    return dict(
+        status="success",
+        alarm=status.alarm_code,
+        mode=status.mode,
+        last_seen=status.last_seen,
+    )
+
+root_agent = Agent(
+    model="gemini-flash-latest",
+    name="maintenance_agent",
+    instruction="Inspect machine state before recommending actions.",
+    tools=[check_machine_status],
+)</code></pre>
+    </figure>
+  </section>
+</SiteLayout>

@@ -1,0 +1,75 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="skills" title="Skills">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03B</p>
+      <h1>Skills package repeatable know-how.</h1>
+      <p>
+        A skill is more than an instruction. It can bundle procedure, examples,
+        scripts, templates, and domain constraints so the agent performs a
+        workflow the same way every time.
+      </p>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span>Use when</span>
+        <h3>The work has a method.</h3>
+        <p>
+          Skills fit recurring workflows: render a document, analyze a dataset,
+          prepare a release note, run a diagnostics playbook, or follow a
+          company-specific review process.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Include</span>
+        <h3>Instructions plus assets.</h3>
+        <p>
+          Put the core procedure in one readable guide. Add scripts for
+          mechanical steps, templates for output shape, and examples that show
+          what good execution looks like.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Design for</span>
+        <h3>Triggering and scope.</h3>
+        <p>
+          Make it obvious when the skill should be used, what it owns, and when
+          it should stop. The best skills reduce ambiguity without hiding the
+          work.
+        </p>
+      </article>
+    </div>
+
+    <figure class="code-card">
+      <figcaption>
+        <span>google_adk_skill_toolset.py</span>
+        <a href="https://adk.dev/skills/" target="_blank" rel="noreferrer">Google ADK docs</a>
+      </figcaption>
+      <pre><code>import pathlib
+
+from google.adk import Agent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools import skill_toolset
+
+diagnostics_skill = load_skill_from_dir(
+    pathlib.Path(__file__).parent / "skills" / "manufacturing-diagnostics"
+)
+
+diagnostics_tools = skill_toolset.SkillToolset(
+    skills=[diagnostics_skill],
+    additional_tools=[read_alarm_history, fetch_sensor_window],
+)
+
+root_agent = Agent(
+    model="gemini-flash-latest",
+    name="diagnostics_agent",
+    instruction="Use the diagnostics skill before proposing maintenance.",
+    tools=[diagnostics_tools],
+)</code></pre>
+    </figure>
+  </section>
+</SiteLayout>

@@ -1,0 +1,70 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="code-execution" title="Code execution">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03C</p>
+      <h1>Code execution makes observations concrete.</h1>
+      <p>
+        It lets the agent measure instead of guess: run tests, inspect files,
+        transform data, calculate results, and verify that a change actually
+        works.
+      </p>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span>Use when</span>
+        <h3>The answer needs computation.</h3>
+        <p>
+          Reach for code execution when the task involves files, logs, tests,
+          charts, data cleaning, repo inspection, simulations, or any result
+          that should be checked rather than asserted.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Design for</span>
+        <h3>Sandboxed feedback.</h3>
+        <p>
+          Give the runtime clear working directories, resource limits, captured
+          output, and artifact paths. The observation should be short enough for
+          the model to use on the next turn.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Guard</span>
+        <h3>Side effects.</h3>
+        <p>
+          Separate read-only inspection from write actions. Treat network,
+          secrets, destructive commands, and production systems as explicit
+          permission boundaries.
+        </p>
+      </article>
+    </div>
+
+    <figure class="code-card">
+      <figcaption>
+        <span>google_adk_code_execution.py</span>
+        <a href="https://adk.dev/integrations/code-exec-agent-runtime/" target="_blank" rel="noreferrer">Google ADK docs</a>
+      </figcaption>
+      <pre><code>from google.adk.agents.llm_agent import Agent
+from google.adk.code_executors.agent_engine_sandbox_code_executor import (
+    AgentEngineSandboxCodeExecutor,
+)
+
+root_agent = Agent(
+    model="gemini-flash-latest",
+    name="diagnostics_code_agent",
+    instruction=(
+        "Use code to inspect logs and sensor data. "
+        "Summarize calculations and cite the files used."
+    ),
+    code_executor=AgentEngineSandboxCodeExecutor(
+        sandbox_resource_name="SANDBOX_RESOURCE_NAME",
+    ),
+)</code></pre>
+    </figure>
+  </section>
+</SiteLayout>

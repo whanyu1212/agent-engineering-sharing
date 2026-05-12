@@ -1,0 +1,95 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="harness-engineering" title="Harness engineering">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Runtime discipline</p>
+      <h1>Harness engineering: where agents become software.</h1>
+      <p>
+        The harness is the boundary around the model. It decides what context
+        enters, what actions are allowed, how state changes, and what evidence
+        is kept after every turn.
+      </p>
+    </div>
+
+    <div class="harness-map" aria-label="Agent harness responsibility map">
+      <div class="harness-lane">
+        <span>Inputs</span>
+        <strong>User goal</strong>
+        <strong>Session state</strong>
+        <strong>Available tools</strong>
+      </div>
+      <div class="harness-core">
+        <span>Harness</span>
+        <h3>Controlled execution boundary</h3>
+        <div>
+          <strong>Build context</strong>
+          <strong>Route tools</strong>
+          <strong>Gate actions</strong>
+          <strong>Commit events</strong>
+          <strong>Stop or continue</strong>
+        </div>
+      </div>
+      <div class="harness-lane">
+        <span>Outputs</span>
+        <strong>Observations</strong>
+        <strong>Artifacts</strong>
+        <strong>Trace + eval data</strong>
+      </div>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span>Not just prompting</span>
+        <h3>The model should not own the system boundary.</h3>
+        <p>
+          Prompts describe behavior. The harness enforces behavior: tool
+          availability, permissions, timeouts, retries, state writes, and
+          approval gates.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Lifecycle</span>
+        <h3>Every turn has a beginning and an end.</h3>
+        <p>
+          A harness creates or loads a session, appends the user event, invokes
+          the agent, records intermediate events, commits state changes, and
+          returns the final response.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Replay</span>
+        <h3>If it cannot be replayed, it cannot be trusted.</h3>
+        <p>
+          Store enough evidence to reconstruct the run: model config, prompt
+          inputs, tool calls, tool outputs, errors, approvals, and final answer.
+        </p>
+      </article>
+    </div>
+
+    <div class="signal-panel">
+      <h3>Harness responsibilities</h3>
+      <div>
+        <article>
+          <span>Before model</span>
+          <strong>load session, select context, expose tools, apply policy</strong>
+        </article>
+        <article>
+          <span>During tools</span>
+          <strong>validate arguments, enforce permissions, capture observations</strong>
+        </article>
+        <article>
+          <span>After turn</span>
+          <strong>commit state, write traces, emit artifacts, prepare eval data</strong>
+        </article>
+      </div>
+    </div>
+
+    <a class="next-card" href="/harness-examples/">
+      <span>Next</span>
+      <strong>Illustrate the harness with Google ADK examples</strong>
+    </a>
+  </section>
+</SiteLayout>

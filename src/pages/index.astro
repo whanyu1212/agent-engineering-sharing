@@ -1,0 +1,55 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="overview">
+  <section class="hero">
+    <p class="eyebrow">Technical sharing</p>
+    <h1>Opinionated Agent Engineering Sharing</h1>
+    <p class="byline">by Hanyu</p>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <p class="eyebrow">Map</p>
+      <h2>A practical tour of agent architecture.</h2>
+      <p>
+        Start with the agent loop, choose an orchestration model, then design the
+        engineering surfaces that make agents debuggable and recoverable.
+      </p>
+    </div>
+
+    <div class="overview-grid">
+      <a href="/what-is-agent/" class="overview-card">
+        <span>01</span>
+        <h3>What is an agent?</h3>
+        <p>Models in a control loop: state, tools, observations, and stopping criteria.</p>
+      </a>
+      <a href="/orchestration/" class="overview-card">
+        <span>02</span>
+        <h3>ReAct vs graph</h3>
+        <p>Compare flexible model-led loops against explicit workflow graphs.</p>
+      </a>
+      <a href="/engineering-practice/" class="overview-card">
+        <span>03</span>
+        <h3>Tools & capability</h3>
+        <p>Function tools, MCP, skills, code execution, retrieval, and human handoff.</p>
+      </a>
+      <a href="/eval-observability/" class="overview-card">
+        <span>04</span>
+        <h3>Eval & observability</h3>
+        <p>Traces explain what happened. Evals tell whether it was good enough.</p>
+      </a>
+      <a href="/harness-engineering/" class="overview-card">
+        <span>05</span>
+        <h3>Harness concept</h3>
+        <p>The runtime boundary around state, tools, permissions, replay, and tests.</p>
+      </a>
+      <a href="/harness-examples/" class="overview-card">
+        <span>05A</span>
+        <h3>ADK harness examples</h3>
+        <p>Runner, SessionService, confirmations, and eval files as concrete harness pieces.</p>
+      </a>
+    </div>
+  </section>
+</SiteLayout>

@@ -1,0 +1,72 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="agent" title="What is an agent?">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Definition</p>
+      <h1>Agents are models in a control loop.</h1>
+      <p>
+        Prompting asks once. An agent keeps state, chooses tools, observes what
+        happened, and decides whether to continue.
+      </p>
+    </div>
+
+    <div class="agent-grid">
+      <aside class="definition-card">
+        <span>LLM agent</span>
+        <p>
+          A goal-directed program where an LLM repeatedly decides the next
+          action, uses tools, reads observations, and updates state until the
+          task is done.
+        </p>
+        <small>Framing synthesized from Google Cloud and Hugging Face agent docs.</small>
+      </aside>
+
+      <div class="loop-card" aria-label="Agent execution loop">
+        <div class="loop-node">
+          <span>01</span>
+          <strong>User goal</strong>
+        </div>
+        <div class="loop-arrow" aria-hidden="true">→</div>
+        <div class="loop-node">
+          <span>02</span>
+          <strong>Decide</strong>
+          <em>LLM selects action</em>
+        </div>
+        <div class="loop-arrow" aria-hidden="true">→</div>
+        <div class="loop-node">
+          <span>03</span>
+          <strong>Act</strong>
+          <em>tool / code / search / API</em>
+        </div>
+        <div class="loop-arrow down" aria-hidden="true">↓</div>
+        <div class="loop-node observe">
+          <span>04</span>
+          <strong>Observe</strong>
+          <em>result returns</em>
+        </div>
+        <div class="loop-arrow back" aria-hidden="true">←</div>
+        <div class="loop-node repeat">
+          <span>05</span>
+          <strong>Update or stop</strong>
+          <em>plan, state, done</em>
+        </div>
+      </div>
+    </div>
+
+    <figure class="code-card">
+      <figcaption>
+        <span>agent_loop.py</span>
+        <span>pseudocode</span>
+      </figcaption>
+      <pre><code>while not done:
+    context = build_context(state, memory, user_goal)
+    action = llm.decide(context, available_tools)
+    observation = execute(action)
+    state = update_state(state, action, observation)
+    done = should_stop(state, observation)</code></pre>
+    </figure>
+  </section>
+</SiteLayout>

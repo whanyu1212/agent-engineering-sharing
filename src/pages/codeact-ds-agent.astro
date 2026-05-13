@@ -1,0 +1,292 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+// Stage 1 — Function tool: pull dataset via kaggle-cli
+const kaggleToolCode = `# The function tool — a thin Python wrapper around the kaggle CLI.
+import subprocess
+from pathlib import Path
+
+def kaggle_download(dataset: str, dest: str = "data/") -> dict:
+    """Download a Kaggle dataset to a local path. Returns the file index."""
+    Path(dest).mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["kaggle", "datasets", "download",
+         "-d", dataset, "-p", dest, "--unzip"],
+        check=True, timeout=120,
+    )
+    files = sorted(p.name for p in Path(dest).iterdir())
+    return {"dataset": dataset, "dest": dest, "files": files}
+
+# The agent emits a function_call against it.
+# Wire shape (truncated):
+{"function_call": {
+    "name": "kaggle_download",
+    "args": {"dataset": "blastchar/telco-customer-churn"}
+}}
+{"function_response": {
+    "name": "kaggle_download",
+    "response": {
+        "dataset": "blastchar/telco-customer-churn",
+        "dest": "data/",
+        "files": ["WA_Fn-UseC_-Telco-Customer-Churn.csv"]
+    }
+}}`;
+
+// Stage 2 — CodeAct: inspect and understand
+const inspectCode = `import pandas as pd
+
+df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
+print(df.shape, df["Churn"].value_counts(normalize=True).round(3).to_dict())
+# (7043, 21) {'No': 0.735, 'Yes': 0.265}
+
+# Schema scan — types and missingness in one pass.
+print(df.dtypes.value_counts().to_dict())
+print(df.isna().sum().sum(), "missing cells")
+# {object: 17, int64: 2, float64: 1, ...}
+# 0 missing cells
+
+# TotalCharges is typed object — likely whitespace strings. Check it.
+print(df["TotalCharges"].apply(type).value_counts().to_dict())
+# {<class 'str'>: 7043}
+print((df["TotalCharges"].str.strip() == "").sum(), "blank TotalCharges")
+# 11 blank TotalCharges`;
+
+// Stage 3 — CodeAct: preprocess
+const preprocessCode = `from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+# Fix the TotalCharges parse — 11 blanks become NaN, then median impute.
+df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+df["TotalCharges"] = df["TotalCharges"].fillna(df["TotalCharges"].median())
+
+# Encode the target and the 16 categorical predictors.
+y = (df["Churn"] == "Yes").astype(int)
+X = df.drop(columns=["customerID", "Churn"])
+
+cat_cols = X.select_dtypes(include="object").columns
+for col in cat_cols:
+    X[col] = LabelEncoder().fit_transform(X[col].astype(str))
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=y, random_state=42
+)
+print(X_train.shape, X_test.shape, "churn rate", y_train.mean().round(3))
+# (5634, 19) (1409, 19) churn rate 0.265`;
+
+// Stage 4 — Skill: ML baseline workflow
+const skillCode = `from google.adk import Agent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools import skill_toolset
+
+# The skill bundles the procedure: try LogReg, RandomForest, XGBoost;
+# report a fixed-shape comparison table; emit the trained estimators.
+ml_baseline = load_skill_from_dir("skills/ml-baseline")
+
+baseline_tools = skill_toolset.SkillToolset(
+    skills=[ml_baseline],
+    additional_tools=[kaggle_download],
+)
+
+agent = Agent(
+    model="gemini-2.5-flash",
+    name="ml_assistant",
+    instruction=(
+        "Use kaggle_download for data acquisition. "
+        "Use the ml-baseline skill for the modeling sweep. "
+        "Write code directly for everything in between."
+    ),
+    code_executor=AgentEngineSandboxCodeExecutor(...),
+    tools=[baseline_tools],
+)
+
+# When the agent invokes the skill, the output is the comparison table
+# the skill is designed to produce. Stable shape, repeatable across runs.
+# +---------------------+-----------+--------+----------+----------+
+# | model               | accuracy  | f1     | roc_auc  | fit_secs |
+# +---------------------+-----------+--------+----------+----------+
+# | LogisticRegression  | 0.798     | 0.586  | 0.843    | 0.4      |
+# | RandomForest        | 0.791     | 0.566  | 0.821    | 2.1      |
+# | XGBoost             | 0.804     | 0.601  | 0.847    | 1.3      |
+# +---------------------+-----------+--------+----------+----------+`;
+
+// Stage 5 — CodeAct: pick a winner, fit, save
+const finalizeCode = `import joblib
+from sklearn.metrics import classification_report, confusion_matrix
+from xgboost import XGBClassifier
+
+# XGBoost wins on F1 and ROC-AUC. Fit on full training data.
+model = XGBClassifier(
+    n_estimators=200, learning_rate=0.05,
+    max_depth=4, random_state=42, eval_metric="logloss",
+)
+model.fit(X_train, y_train)
+
+# Evaluate against the holdout.
+y_pred = model.predict(X_test)
+print(classification_report(y_test, y_pred, target_names=["stay", "churn"]))
+#               precision  recall  f1-score  support
+#         stay      0.836   0.892     0.863     1035
+#        churn      0.660   0.553     0.602      374
+
+print(confusion_matrix(y_test, y_pred))
+# [[923 112]
+#  [167 207]]
+
+joblib.dump(model, "artifacts/churn_xgb_v1.joblib")
+# Saved 1.2MB model artifact. Ready for handoff or deployment.`;
+---
+
+<SiteLayout current="codeact-ds-agent" title="A specialized ML coding agent">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">A specialized ML coding agent</p>
+      <h1>One agent, three tool forms, one end-to-end workflow.</h1>
+      <!-- VOICE: tighten this lede to the framing you want. The default below
+           sets up the chapter as a capstone — sharpen it if you want a
+           different angle. -->
+      <p>
+        A single agent that, given a problem statement, finds a relevant
+        Kaggle dataset, pulls it, analyzes it, preprocesses it, and fits a
+        baseline model. It uses a <strong>function tool</strong> for the
+        Kaggle CLI, a <strong>skill</strong> for the modeling sweep, and
+        <strong>CodeAct</strong> for everything in between. The lesson: tool
+        forms aren't alternatives. They're a vocabulary.
+      </p>
+    </div>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Stage 01 · Function tool</span>
+        <h3>Pull the dataset.</h3>
+        <p>
+          <code>kaggle datasets download</code> is a typed, bounded action
+          with a deterministic result. That's the function-tool sweet spot.
+          Wrap it as <code>kaggle_download(dataset)</code>, give it a
+          timeout, and let the agent call it through the standard
+          <code>function_call</code> protocol from chapter 03A.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">kaggle_tool.py</span>
+          <span class="code-tag">stage 01</span>
+        </figcaption>
+        <Code code={kaggleToolCode} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Stage 02 · CodeAct</span>
+        <h3>Inspect, find the data quirks.</h3>
+        <p>
+          Once the file lands, the action shape switches. The agent reads the
+          schema, checks the target distribution, and notices that
+          <code>TotalCharges</code> is typed <code>object</code> because of
+          eleven blank strings — the kind of finding no JSON tool schema
+          could express in a single call.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">inspect.py</span>
+          <span class="code-tag">stage 02</span>
+        </figcaption>
+        <Code code={inspectCode} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Stage 03 · CodeAct</span>
+        <h3>Clean, encode, split.</h3>
+        <p>
+          Preprocessing is where CodeAct most clearly beats enumerated tools.
+          Coerce the broken numeric column, impute, label-encode the
+          categoricals, stratify the split. None of this fits in a JSON
+          schema — but all of it is a few lines of pandas + sklearn.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">preprocess.py</span>
+          <span class="code-tag">stage 03</span>
+        </figcaption>
+        <Code code={preprocessCode} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Stage 04 · Skill</span>
+        <h3>Run the baseline sweep.</h3>
+        <p>
+          Modeling sweeps benefit from <em>prescription</em>: try the same
+          three estimators, score them the same way, output the same shape.
+          That's exactly what a skill packages — the procedure, the
+          templates, the expected output. The agent invokes the skill rather
+          than reinventing the sweep each run.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">ml_baseline_skill.py</span>
+          <span class="code-tag">stage 04</span>
+        </figcaption>
+        <Code code={skillCode} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Stage 05 · CodeAct</span>
+        <h3>Pick a winner, fit, persist.</h3>
+        <p>
+          Choosing the model is a judgment call grounded in numbers; fitting
+          and persisting it is mechanical. Both belong in code, in one
+          block. The artifact at the end is the handoff to whoever ships it
+          — or to the next agent in the chain.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">finalize.py</span>
+          <span class="code-tag">stage 05</span>
+        </figcaption>
+        <Code code={finalizeCode} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <div class="signal-panel" style="margin-top: 36px;">
+      <h3>What this chapter showed</h3>
+      <div>
+        <article>
+          <span>Three tool forms, in sequence</span>
+          <strong>Function tool for the CLI wrapper, CodeAct for analysis and preprocessing, skill for the prescribed modeling sweep, CodeAct again for the close-out. The shape adapts to the work.</strong>
+        </article>
+        <article>
+          <span>One harness wraps all of them</span>
+          <strong>Sessions, events, confirmations, and evals don't change between stages. The runner streams events; the eval set can assert on the trajectory across all five stages.</strong>
+        </article>
+        <article>
+          <span>The action shape is a design choice</span>
+          <strong>The agent architect's real job is picking which form goes where. "Always JSON" or "always CodeAct" both leave value on the table.</strong>
+        </article>
+      </div>
+    </div>
+
+    <!-- VOICE: one closing line tying back to the harness chapter. Default below. -->
+    <p class="chapter-close">
+      A specialized coding agent isn't a different kind of agent. It is the
+      harness story from chapter 05 with the action surface tuned to the
+      domain — function tools where actions are bounded, CodeAct where they
+      aren't, and skills where the procedure matters more than the freedom.
+    </p>
+  </section>
+</SiteLayout>

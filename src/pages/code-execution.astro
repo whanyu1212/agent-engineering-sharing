@@ -1,5 +1,23 @@
 ---
+import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+
+const codeExecutionCode = `from google.adk.agents.llm_agent import Agent
+from google.adk.code_executors.agent_engine_sandbox_code_executor import (
+    AgentEngineSandboxCodeExecutor,
+)
+
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="diagnostics_code_agent",
+    instruction=(
+        "Use code to inspect logs and sensor data. "
+        "Summarize calculations and cite the files used."
+    ),
+    code_executor=AgentEngineSandboxCodeExecutor(
+        sandbox_resource_name="SANDBOX_RESOURCE_NAME",
+    ),
+)`;
 ---
 
 <SiteLayout current="code-execution" title="Code execution">
@@ -44,27 +62,13 @@ import SiteLayout from '../layouts/SiteLayout.astro';
       </article>
     </div>
 
-    <figure class="code-card">
+    <figure class="code-card code-card--standalone">
       <figcaption>
-        <span>google_adk_code_execution.py</span>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">google_adk_code_execution.py</span>
         <a href="https://adk.dev/integrations/code-exec-agent-runtime/" target="_blank" rel="noreferrer">Google ADK docs</a>
       </figcaption>
-      <pre><code>from google.adk.agents.llm_agent import Agent
-from google.adk.code_executors.agent_engine_sandbox_code_executor import (
-    AgentEngineSandboxCodeExecutor,
-)
-
-root_agent = Agent(
-    model="gemini-flash-latest",
-    name="diagnostics_code_agent",
-    instruction=(
-        "Use code to inspect logs and sensor data. "
-        "Summarize calculations and cite the files used."
-    ),
-    code_executor=AgentEngineSandboxCodeExecutor(
-        sandbox_resource_name="SANDBOX_RESOURCE_NAME",
-    ),
-)</code></pre>
+      <Code code={codeExecutionCode} lang="python" theme="github-light" />
     </figure>
   </section>
 </SiteLayout>

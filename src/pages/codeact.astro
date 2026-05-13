@@ -1,0 +1,229 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const jsonToolTrace = `# Same task: "Top 3 machines by downtime in the last 30 days."
+# JSON tool-call path — four model turns, four roundtrips.
+# Each function_call is a structured Part the model emits; each
+# function_response is the runtime's reply on the next turn.
+
+# Turn 1 — model emits function_call.
+{"function_call": {
+    "name": "query_downtime_events",
+    "args": {"since_days": 30}
+}}
+# Turn 1 — runtime dispatches, returns function_response.
+{"function_response": {
+    "name": "query_downtime_events",
+    "response": {"rows": 14802, "ref": "ds://q-7f3a"}
+}}
+
+# Turn 2 — model decides it needs an aggregate.
+{"function_call": {
+    "name": "aggregate_rows",
+    "args": {"ref": "ds://q-7f3a", "by": "machine_id",
+             "metric": "sum", "field": "duration_minutes"}
+}}
+{"function_response": {
+    "name": "aggregate_rows",
+    "response": {"rows": 312, "ref": "ds://a-12c0"}
+}}
+
+# Turn 3 — model asks for top-N.
+{"function_call": {
+    "name": "top_n",
+    "args": {"ref": "ds://a-12c0", "n": 3,
+             "order_by": "duration_minutes", "desc": true}
+}}
+{"function_response": {
+    "name": "top_n",
+    "response": {"rows": [
+        {"machine_id": "M-42", "duration_minutes": 1104.2},
+        {"machine_id": "M-07", "duration_minutes":  846.5},
+        {"machine_id": "M-13", "duration_minutes":  763.1}
+    ]}
+}}
+
+# Turn 4 — model emits the final natural-language answer.
+"M-42 leads at 18.4h, M-07 at 14.1h, M-13 at 12.7h over the last 30 days."`;
+
+const codeActTrace = `# Same task. One model turn. One Python block.
+import pandas as pd
+
+df = run_query("""
+    SELECT machine_id, duration_minutes
+    FROM downtime_events
+    WHERE ts >= now() - interval '30 days'
+""")
+
+top = (
+    df.groupby("machine_id")["duration_minutes"]
+      .sum()
+      .nlargest(3)
+)
+print(top.to_string())
+# M-42    1104.2
+# M-07     846.5
+# M-13     763.1`;
+---
+
+<SiteLayout current="codeact" title="CodeAct">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">The action shape that scales</p>
+      <h1>CodeAct: when the action <em>is</em> code, the loop gets shorter.</h1>
+      <!-- VOICE: tighten this lede to one or two sentences that say what *you* believe.
+           The default below is technically correct but doesn't carry a point of view. -->
+      <p>
+        The landing page argued that JSON tool calls don't scale and code does.
+        This chapter defends the claim: where the evidence comes from, what the
+        mechanism is, and where the trade-off honestly breaks down.
+      </p>
+    </div>
+
+    <div class="compare-grid">
+      <article class="compare-card">
+        <div class="card-head">
+          <span class="card-label">Bounded</span>
+          <div>
+            <h3>JSON tool calls</h3>
+            <p>Pre-defined schema, one operation per call.</p>
+          </div>
+        </div>
+        <ul>
+          <li>Action space is the set of tools the developer enumerated.</li>
+          <li>Every new combination is a new prompt-engineering problem.</li>
+          <li>Intermediate results don't compose — each call is a roundtrip.</li>
+        </ul>
+      </article>
+
+      <article class="compare-card graph-card">
+        <div class="card-head">
+          <span class="card-label">Open</span>
+          <div>
+            <h3>CodeAct</h3>
+            <p>Executable code as a single, unified action.</p>
+          </div>
+        </div>
+        <ul>
+          <li>Action space is whatever the language and runtime can express.</li>
+          <li>Composition is free — variables, loops, and conditions are first-class.</li>
+          <li>Errors come back as tracebacks: the richest feedback shape an agent gets.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="signal-panel">
+      <h3>The evidence</h3>
+      <div>
+        <article>
+          <span>Success rate</span>
+          <strong>Up to 20% higher than JSON or text actions across 17 LLMs (Wang et al., ICML 2024).</strong>
+        </article>
+        <article>
+          <span>Turns per task</span>
+          <strong>~30% fewer steps than JSON, with a matching reduction in tokens generated.</strong>
+        </article>
+        <article>
+          <span>Adoption</span>
+          <strong>Microsoft Agent Framework (early 2026), Google ADK code executors, OpenAI's code interpreter — same idea, three vendors.</strong>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 36px;">
+      <p class="eyebrow">The contrast, in code</p>
+      <h2>Same task, two action shapes.</h2>
+      <p>
+        The JSON side below shows the actual wire shape: the model emits a
+        <code>function_call</code> part, the runtime dispatches it, and a
+        <code>function_response</code> comes back on the next turn. (For the
+        mechanism in detail, see <a href="/function-tools/">chapter 03A</a>.)
+        Compare it against the CodeAct side, where the same four turns collapse
+        into one Python block.
+      </p>
+    </div>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>JSON tool calls</span>
+        <h3>Four turns. Four function_calls. Four schemas the developer maintains.</h3>
+        <p>
+          Each operation is a separate model decision wrapped in a separate
+          tool. The agent can only do what the tools allow, in the order the
+          schemas permit. Adding a new aggregation means shipping a new tool.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">json_tool_trace.py</span>
+          <span class="code-tag">wire-shape trace</span>
+        </figcaption>
+        <Code code={jsonToolTrace} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>CodeAct</span>
+        <h3>One turn. One Python block. Composition is free.</h3>
+        <p>
+          The agent writes the analysis the way an analyst would. The action
+          surface is pandas + the language. Intermediate results live in
+          variables, not in JSON envelopes. The model sees the result and
+          summarizes — no extra round trip.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">codeact_trace.py</span>
+          <span class="code-tag">illustrative trace</span>
+        </figcaption>
+        <Code code={codeActTrace} lang="python" theme="github-light" />
+      </figure>
+    </article>
+
+    <div class="section-head compact-head" style="margin-top: 36px;">
+      <p class="eyebrow">Honest limits</p>
+      <h2>Where CodeAct isn't the answer.</h2>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span>Trust boundary</span>
+        <h3>The action surface is "anything the runtime can do."</h3>
+        <p>
+          That's the point — and the risk. CodeAct requires a real sandbox: no
+          ambient credentials, no network unless granted, no filesystem outside
+          a working directory. ADK's <code>AgentEngineSandboxCodeExecutor</code>
+          handles this; rolling your own is harder than it looks.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Auditability</span>
+        <h3>Free-form code is harder to permission than enumerated tools.</h3>
+        <p>
+          When every action is a typed tool call, a compliance reviewer can read
+          the tool list. When actions are arbitrary code, the eval trace becomes
+          the audit surface. Workable, but it shifts where the burden sits.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span>Model skill ceiling</span>
+        <h3>Small models write worse code than they fill JSON.</h3>
+        <p>
+          The CodeAct paper measured across 17 LLMs. Larger and code-tuned
+          models showed the largest gains; smaller general models did better
+          with structured JSON. The trade-off shifts with the model you ship.
+        </p>
+      </article>
+    </div>
+
+    <a class="next-card" href="/codeact-ds-agent/">
+      <span>Next</span>
+      <strong>See it run end-to-end: a Kaggle-driven ML agent</strong>
+    </a>
+  </section>
+</SiteLayout>

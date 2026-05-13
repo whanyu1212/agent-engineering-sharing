@@ -1,5 +1,25 @@
 ---
+import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+
+const functionToolCode = `from google.adk.agents import Agent
+
+def check_machine_status(machine_id: str) -> dict:
+    """Return current alarm, mode, and last-seen timestamp."""
+    status = mes_client.get_machine(machine_id)
+    return dict(
+        status="success",
+        alarm=status.alarm_code,
+        mode=status.mode,
+        last_seen=status.last_seen,
+    )
+
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="maintenance_agent",
+    instruction="Inspect machine state before recommending actions.",
+    tools=[check_machine_status],
+)`;
 ---
 
 <SiteLayout current="function-tools" title="Function tools">
@@ -43,29 +63,41 @@ import SiteLayout from '../layouts/SiteLayout.astro';
       </article>
     </div>
 
-    <figure class="code-card">
+    <div class="signal-panel signal-panel--four" style="margin-top: 28px;">
+      <h3>How a function tool call actually flows</h3>
+      <div>
+        <article>
+          <span>01 · Setup</span>
+          <strong>The runtime introspects the Python signature and docstring into a JSON schema, then hands the schema to the model as part of its prompt — the model sees a list of available <code>function_declarations</code>, not the Python callables themselves.</strong>
+        </article>
+        <article>
+          <span>02 · Decision</span>
+          <strong>The model emits a structured <code>function_call</code> part — a name and an args object that conform to the schema. This is constrained decoding, not free text. The model never executes anything; it only produces an instruction.</strong>
+        </article>
+        <article>
+          <span>03 · Dispatch</span>
+          <strong>The runtime receives the <code>function_call</code> event, looks up the Python callable by name, validates the args, and invokes it. Permissions, confirmations, timeouts, and retries apply <em>here</em>, not inside the model.</strong>
+        </article>
+        <article>
+          <span>04 · Response</span>
+          <strong>The return value becomes a <code>function_response</code> event appended to the session and fed back to the model on the next turn. The model reads it and decides what to do next.</strong>
+        </article>
+      </div>
+    </div>
+
+    <p class="mechanism-note">
+      The same four-step shape — declare, decide, dispatch, respond — appears
+      in OpenAI function calling, Anthropic tool use, and Gemini function
+      calling. The vocabulary differs; the protocol is the same.
+    </p>
+
+    <figure class="code-card code-card--standalone">
       <figcaption>
-        <span>google_adk_function_tool.py</span>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">google_adk_function_tool.py</span>
         <a href="https://adk.dev/tools-custom/function-tools/" target="_blank" rel="noreferrer">Google ADK docs</a>
       </figcaption>
-      <pre><code>from google.adk.agents import Agent
-
-def check_machine_status(machine_id: str) -> dict:
-    """Return current alarm, mode, and last-seen timestamp."""
-    status = mes_client.get_machine(machine_id)
-    return dict(
-        status="success",
-        alarm=status.alarm_code,
-        mode=status.mode,
-        last_seen=status.last_seen,
-    )
-
-root_agent = Agent(
-    model="gemini-flash-latest",
-    name="maintenance_agent",
-    instruction="Inspect machine state before recommending actions.",
-    tools=[check_machine_status],
-)</code></pre>
+      <Code code={functionToolCode} lang="python" theme="github-light" />
     </figure>
   </section>
 </SiteLayout>

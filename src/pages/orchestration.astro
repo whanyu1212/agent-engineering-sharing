@@ -28,30 +28,29 @@ import SiteLayout from '../layouts/SiteLayout.astro';
               </marker>
             </defs>
             <g class="react-links">
-              <path d="M 162 52 H 218"></path>
-              <path d="M 302 52 H 358"></path>
-              <path d="M 406 74 C 406 122, 114 122, 114 76"></path>
+              <path d="M 168 56 H 212"></path>
+              <path d="M 308 56 H 352"></path>
+              <path d="M 412 78 C 412 130, 108 130, 108 80"></path>
             </g>
             <g class="react-node-svg">
-              <rect x="58" y="30" width="104" height="44" rx="22"></rect>
-              <text x="110" y="56">reason</text>
+              <rect x="56" y="34" width="112" height="44" rx="22"></rect>
+              <text x="112" y="60">reason</text>
             </g>
             <g class="react-node-svg">
-              <rect x="218" y="30" width="84" height="44" rx="22"></rect>
-              <text x="260" y="56">act</text>
+              <rect x="212" y="34" width="96" height="44" rx="22"></rect>
+              <text x="260" y="60">act</text>
             </g>
             <g class="react-node-svg">
-              <rect x="358" y="30" width="104" height="44" rx="22"></rect>
-              <text x="410" y="56">observe</text>
+              <rect x="352" y="34" width="112" height="44" rx="22"></rect>
+              <text x="408" y="60">observe</text>
             </g>
-            <text class="loop-caption" x="260" y="134">model decides the next step each turn</text>
+            <text class="loop-caption" x="260" y="148">model decides the next step each turn</text>
           </svg>
         </div>
         <ul>
-          <li>Minimal orchestration</li>
-          <li>Great for open-ended exploration</li>
-          <li>Model decides the next step each turn</li>
-          <li>Harder to guarantee path, retries, or state</li>
+          <li>Minimal orchestration; great for open-ended exploration.</li>
+          <li>Model decides the next step every turn.</li>
+          <li>Harder to guarantee path, retries, or state.</li>
         </ul>
       </article>
 
@@ -72,44 +71,43 @@ import SiteLayout from '../layouts/SiteLayout.astro';
               </marker>
             </defs>
             <g class="graph-links">
-              <path d="M 90 48 H 152"></path>
-              <path d="M 248 48 H 310"></path>
-              <path d="M 390 48 H 430"></path>
-              <path d="M 350 70 V 104"></path>
-              <path d="M 310 126 H 210"></path>
-              <path d="M 152 126 H 90 V 72"></path>
+              <path d="M 88 56 H 148"></path>
+              <path d="M 260 56 H 308"></path>
+              <path d="M 388 56 H 432"></path>
+              <path d="M 348 78 V 116"></path>
+              <path d="M 308 138 H 260"></path>
+              <path d="M 148 138 H 88 V 78"></path>
             </g>
             <g class="graph-node-svg">
-              <rect x="24" y="26" width="66" height="44" rx="22"></rect>
-              <text x="57" y="52">start</text>
+              <rect x="24" y="34" width="64" height="44" rx="22"></rect>
+              <text x="56" y="60">start</text>
             </g>
             <g class="graph-node-svg">
-              <rect x="152" y="26" width="96" height="44" rx="22"></rect>
-              <text x="200" y="52">route</text>
+              <rect x="148" y="34" width="112" height="44" rx="22"></rect>
+              <text x="204" y="60">route</text>
             </g>
             <g class="graph-node-svg">
-              <rect x="310" y="26" width="80" height="44" rx="22"></rect>
-              <text x="350" y="52">tool</text>
-            </g>
-            <g class="graph-node-svg">
-              <rect x="430" y="26" width="66" height="44" rx="22"></rect>
-              <text x="463" y="52">done</text>
-            </g>
-            <g class="graph-node-svg is-recover">
-              <rect x="90" y="104" width="120" height="44" rx="22"></rect>
-              <text x="150" y="130">recover</text>
+              <rect x="308" y="34" width="80" height="44" rx="22"></rect>
+              <text x="348" y="60">tool</text>
             </g>
             <g class="graph-node-svg is-done">
-              <rect x="310" y="104" width="80" height="44" rx="22"></rect>
-              <text x="350" y="130">check</text>
+              <rect x="432" y="34" width="64" height="44" rx="22"></rect>
+              <text x="464" y="60">done</text>
+            </g>
+            <g class="graph-node-svg is-recover">
+              <rect x="148" y="116" width="112" height="44" rx="22"></rect>
+              <text x="204" y="142">recover</text>
+            </g>
+            <g class="graph-node-svg">
+              <rect x="308" y="116" width="80" height="44" rx="22"></rect>
+              <text x="348" y="142">check</text>
             </g>
           </svg>
         </div>
         <ul>
-          <li>Explicit workflow structure</li>
-          <li>Great for production flows</li>
-          <li>System decides valid transitions</li>
-          <li>Easier to test, resume, inspect, and recover</li>
+          <li>Explicit workflow structure for production flows.</li>
+          <li>System decides valid transitions; model fills nodes.</li>
+          <li>Easier to test, resume, inspect, and recover.</li>
         </ul>
       </article>
     </div>

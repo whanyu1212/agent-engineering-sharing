@@ -1,5 +1,28 @@
 ---
+import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+
+const skillToolsetCode = `import pathlib
+
+from google.adk import Agent
+from google.adk.skills import load_skill_from_dir
+from google.adk.tools import skill_toolset
+
+diagnostics_skill = load_skill_from_dir(
+    pathlib.Path(__file__).parent / "skills" / "manufacturing-diagnostics"
+)
+
+diagnostics_tools = skill_toolset.SkillToolset(
+    skills=[diagnostics_skill],
+    additional_tools=[read_alarm_history, fetch_sensor_window],
+)
+
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="diagnostics_agent",
+    instruction="Use the diagnostics skill before proposing maintenance.",
+    tools=[diagnostics_tools],
+)`;
 ---
 
 <SiteLayout current="skills" title="Skills">
@@ -44,32 +67,13 @@ import SiteLayout from '../layouts/SiteLayout.astro';
       </article>
     </div>
 
-    <figure class="code-card">
+    <figure class="code-card code-card--standalone">
       <figcaption>
-        <span>google_adk_skill_toolset.py</span>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">google_adk_skill_toolset.py</span>
         <a href="https://adk.dev/skills/" target="_blank" rel="noreferrer">Google ADK docs</a>
       </figcaption>
-      <pre><code>import pathlib
-
-from google.adk import Agent
-from google.adk.skills import load_skill_from_dir
-from google.adk.tools import skill_toolset
-
-diagnostics_skill = load_skill_from_dir(
-    pathlib.Path(__file__).parent / "skills" / "manufacturing-diagnostics"
-)
-
-diagnostics_tools = skill_toolset.SkillToolset(
-    skills=[diagnostics_skill],
-    additional_tools=[read_alarm_history, fetch_sensor_window],
-)
-
-root_agent = Agent(
-    model="gemini-flash-latest",
-    name="diagnostics_agent",
-    instruction="Use the diagnostics skill before proposing maintenance.",
-    tools=[diagnostics_tools],
-)</code></pre>
+      <Code code={skillToolsetCode} lang="python" theme="github-light" />
     </figure>
   </section>
 </SiteLayout>

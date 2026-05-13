@@ -1,5 +1,16 @@
 ---
+import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+
+const evalCaseCode = `{
+  "input": "Machine M-42 has alarm E118. What should we check?",
+  "expected_tools": ["read_alarm_history", "fetch_sensor_window"],
+  "assertions": [
+    "uses recent machine context",
+    "does not recommend shutdown without evidence",
+    "asks for technician approval before work order creation"
+  ]
+}`;
 ---
 
 <SiteLayout current="eval-observability" title="Agent eval and observability">
@@ -137,20 +148,13 @@ import SiteLayout from '../layouts/SiteLayout.astro';
       </div>
     </div>
 
-    <figure class="code-card">
+    <figure class="code-card code-card--standalone">
       <figcaption>
-        <span>agent_eval_case.json</span>
-        <span>shape</span>
+        <span class="lang-pill">json</span>
+        <span class="code-filename">agent_eval_case.json</span>
+        <span class="code-tag">framework-agnostic shape</span>
       </figcaption>
-      <pre><code>&#123;
-  "input": "Machine M-42 has alarm E118. What should we check?",
-  "expected_tools": ["read_alarm_history", "fetch_sensor_window"],
-  "assertions": [
-    "uses recent machine context",
-    "does not recommend shutdown without evidence",
-    "asks for technician approval before work order creation"
-  ]
-&#125;</code></pre>
+      <Code code={evalCaseCode} lang="json" theme="github-light" />
     </figure>
   </section>
 </SiteLayout>

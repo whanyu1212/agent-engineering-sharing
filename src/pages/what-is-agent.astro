@@ -1,5 +1,13 @@
 ---
+import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+
+const agentLoopCode = `while not done:
+    context = build_context(state, memory, user_goal)
+    action = llm.decide(context, available_tools)
+    observation = execute(action)
+    state = update_state(state, action, observation)
+    done = should_stop(state, observation)`;
 ---
 
 <SiteLayout current="agent" title="What is an agent?">
@@ -24,49 +32,64 @@ import SiteLayout from '../layouts/SiteLayout.astro';
         <small>Framing synthesized from Google Cloud and Hugging Face agent docs.</small>
       </aside>
 
-      <div class="loop-card" aria-label="Agent execution loop">
-        <div class="loop-node">
-          <span>01</span>
-          <strong>User goal</strong>
-        </div>
-        <div class="loop-arrow" aria-hidden="true">→</div>
-        <div class="loop-node">
-          <span>02</span>
-          <strong>Decide</strong>
-          <em>LLM selects action</em>
-        </div>
-        <div class="loop-arrow" aria-hidden="true">→</div>
-        <div class="loop-node">
-          <span>03</span>
-          <strong>Act</strong>
-          <em>tool / code / search / API</em>
-        </div>
-        <div class="loop-arrow down" aria-hidden="true">↓</div>
-        <div class="loop-node observe">
-          <span>04</span>
-          <strong>Observe</strong>
-          <em>result returns</em>
-        </div>
-        <div class="loop-arrow back" aria-hidden="true">←</div>
-        <div class="loop-node repeat">
-          <span>05</span>
-          <strong>Update or stop</strong>
-          <em>plan, state, done</em>
-        </div>
+      <div class="loop-diagram" aria-label="Agent execution loop">
+        <svg viewBox="0 0 640 280" role="img" aria-labelledby="loop-title">
+          <title id="loop-title">Agent loop: user goal, decide, act, observe, update or stop</title>
+          <defs>
+            <marker id="loop-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+
+          <g class="loop-links">
+            <path d="M 134 60 H 222"></path>
+            <path d="M 342 60 H 430"></path>
+            <path d="M 506 86 V 188"></path>
+            <path d="M 430 214 H 342"></path>
+            <path d="M 222 214 C 150 214, 122 188, 122 110"></path>
+          </g>
+
+          <g class="loop-node-svg">
+            <rect x="30" y="38" width="104" height="44" rx="22"></rect>
+            <text x="82" y="64">user goal</text>
+          </g>
+          <g class="loop-node-svg">
+            <rect x="222" y="38" width="120" height="44" rx="22"></rect>
+            <text x="282" y="64">decide</text>
+          </g>
+          <g class="loop-node-svg">
+            <rect x="430" y="38" width="104" height="44" rx="22"></rect>
+            <text x="482" y="64">act</text>
+          </g>
+          <g class="loop-node-svg">
+            <rect x="430" y="192" width="104" height="44" rx="22"></rect>
+            <text x="482" y="218">observe</text>
+          </g>
+          <g class="loop-node-svg is-repeat">
+            <rect x="222" y="192" width="120" height="44" rx="22"></rect>
+            <text x="282" y="218">update or stop</text>
+          </g>
+
+          <text class="loop-caption" x="282" y="148">model decides every turn until done</text>
+        </svg>
+
+        <ol class="loop-legend">
+          <li><strong>User goal</strong> — task arrives with state and context.</li>
+          <li><strong>Decide</strong> — model picks the next action from available tools.</li>
+          <li><strong>Act</strong> — tool, code, search, or API call runs.</li>
+          <li><strong>Observe</strong> — result and side effects return to state.</li>
+          <li><strong>Update or stop</strong> — apply changes, then continue or finish.</li>
+        </ol>
       </div>
     </div>
 
-    <figure class="code-card">
+    <figure class="code-card code-card--standalone">
       <figcaption>
-        <span>agent_loop.py</span>
-        <span>pseudocode</span>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">agent_loop.py</span>
+        <span class="code-tag">pseudocode</span>
       </figcaption>
-      <pre><code>while not done:
-    context = build_context(state, memory, user_goal)
-    action = llm.decide(context, available_tools)
-    observation = execute(action)
-    state = update_state(state, action, observation)
-    done = should_stop(state, observation)</code></pre>
+      <Code code={agentLoopCode} lang="python" theme="github-light" />
     </figure>
   </section>
 </SiteLayout>

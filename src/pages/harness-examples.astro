@@ -1,70 +1,23 @@
 ---
+import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
----
 
-<SiteLayout current="harness-examples" title="ADK harness examples">
-  <section class="section page-section">
-    <div class="section-head">
-      <p class="eyebrow">Harness examples</p>
-      <h1>Google ADK makes the harness visible.</h1>
-      <p>
-        ADK separates the runtime pieces clearly: the runner executes turns,
-        session services hold state and events, confirmations gate risky tools,
-        and eval files make trajectories testable.
-      </p>
-    </div>
-
-    <div class="detail-grid">
-      <article class="detail-card">
-        <span>Runner</span>
-        <h3>Execution loop as an object.</h3>
-        <p>
-          The <code>Runner</code> is the entry point for an invocation. It
-          connects an agent to session, memory, artifact, and credential
-          services.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span>Confirmations</span>
-        <h3>Human gates become part of runtime.</h3>
-        <p>
-          ADK can pause a tool call and request confirmation before executing
-          high-impact actions like refunds, work orders, or production changes.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span>Evals</span>
-        <h3>Tool trajectories become assertions.</h3>
-        <p>
-          ADK eval files can encode not only the final response, but also the
-          expected tool-use path the harness should produce.
-        </p>
-      </article>
-    </div>
-
-    <div class="code-grid">
-      <figure class="code-card">
-        <figcaption>
-          <span>adk_runner_session.py</span>
-          <a href="https://adk.dev/runtime/event-loop/" target="_blank" rel="noreferrer">ADK event loop</a>
-        </figcaption>
-        <pre><code>from google.adk.runners import Runner
+const runnerCode = `from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types
 
 session_service = InMemorySessionService()
 
+session = await session_service.create_session(
+    app_name="maintenance_agent",
+    user_id="operator-7",
+    state={"line": "press-2", "machine_id": "M-42"},
+)
+
 runner = Runner(
     agent=root_agent,
     app_name="maintenance_agent",
     session_service=session_service,
-)
-
-await session_service.create_session(
-    app_name="maintenance_agent",
-    user_id="operator-7",
-    session_id="shift-a",
-    state=dict(line="press-2", machine_id="M-42"),
 )
 
 message = types.Content(
@@ -74,23 +27,17 @@ message = types.Content(
 
 async for event in runner.run_async(
     user_id="operator-7",
-    session_id="shift-a",
+    session_id=session.id,
     new_message=message,
 ):
     if event.is_final_response():
-        print(event.content.parts[0].text)</code></pre>
-      </figure>
+        print(event.content.parts[0].text)`;
 
-      <figure class="code-card">
-        <figcaption>
-          <span>adk_control_points.py</span>
-          <a href="https://adk.dev/tools-custom/confirmation/" target="_blank" rel="noreferrer">ADK confirmations</a>
-        </figcaption>
-        <pre><code>from google.adk.agents import Agent
+const confirmationsCode = `from google.adk.agents import Agent
 from google.adk.tools import FunctionTool
 
 root_agent = Agent(
-    model="gemini-flash-latest",
+    model="gemini-2.5-flash",
     name="maintenance_agent",
     instruction=(
         "Diagnose manufacturing issues. "
@@ -101,42 +48,212 @@ root_agent = Agent(
         fetch_sensor_window,
         FunctionTool(create_work_order, require_confirmation=True),
     ],
-)</code></pre>
-      </figure>
+)`;
 
-      <figure class="code-card">
-        <figcaption>
-          <span>adk_eval_case.test.json</span>
-          <a href="https://adk.dev/evaluate/" target="_blank" rel="noreferrer">ADK evals</a>
-        </figcaption>
-        <pre><code>&#123;
+const hitlCode = `from google.adk import Workflow
+from google.adk.events import RequestInput
+
+def propose_work_order(ctx):
+    return {
+        "machine_id": "M-42",
+        "alarm": "E118",
+        "recommended_action": "replace pressure sensor",
+    }
+
+def request_supervisor_approval(proposal):
+    yield RequestInput(
+        message=f"Approve work order for {proposal['machine_id']}?",
+        payload=proposal,
+        response_schema={"approved": "bool", "notes": "str"},
+    )
+
+def create_or_escalate(decision):
+    if decision["approved"]:
+        return create_work_order(decision)
+    return escalate_to_engineering(decision)
+
+root_agent = Workflow(
+    name="maintenance_with_hitl",
+    edges=[
+        ("START", propose_work_order, request_supervisor_approval),
+        (request_supervisor_approval, create_or_escalate, "END"),
+    ],
+)`;
+
+const evalCode = `{
   "eval_set_id": "manufacturing_diagnostics",
+  "name": "Manufacturing diagnostics",
   "eval_cases": [
-    &#123;
+    {
       "eval_id": "alarm_e118_requires_diagnostics",
       "conversation": [
-        &#123;
-          "user_content": &#123;
-            "parts": [&#123; "text": "Machine M-42 has alarm E118." &#125;],
+        {
+          "invocation_id": "inv-001",
+          "user_content": {
+            "parts": [{ "text": "Machine M-42 has alarm E118." }],
             "role": "user"
-          &#125;,
-          "final_response": &#123;
-            "parts": [&#123; "text": "I checked recent alarms and sensor windows." &#125;],
-            "role": "model"
-          &#125;,
-          "intermediate_data": &#123;
+          },
+          "intermediate_data": {
             "tool_uses": [
-              &#123; "name": "read_alarm_history" &#125;,
-              &#123; "name": "fetch_sensor_window" &#125;
-            ],
-            "intermediate_responses": []
-          &#125;
-        &#125;
-      ]
-    &#125;
+              { "name": "read_alarm_history",
+                "args": { "machine_id": "M-42" } },
+              { "name": "fetch_sensor_window",
+                "args": { "machine_id": "M-42", "minutes": 30 } }
+            ]
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "maintenance_agent",
+        "user_id": "operator-7",
+        "state": { "line": "press-2" }
+      }
+    }
   ]
-&#125;</code></pre>
-      </figure>
+}`;
+
+const eventsCode = `async for event in runner.run_async(
+    user_id="operator-7",
+    session_id=session.id,
+    new_message=message,
+):
+    if event.content and event.content.parts:
+        for part in event.content.parts:
+            if part.function_call:
+                log("tool_call", part.function_call.name, part.function_call.args)
+            elif part.function_response:
+                log("tool_result", part.function_response.name)
+            elif part.text:
+                log("model_text", part.text)
+
+    if event.actions and event.actions.state_delta:
+        log("state_delta", event.actions.state_delta)
+
+    if event.is_final_response():
+        break`;
+
+const theme = 'github-light';
+---
+
+<SiteLayout current="harness-examples" title="ADK harness examples">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Harness examples</p>
+      <h1>Google ADK makes the harness visible.</h1>
+      <p>
+        The three slots from the previous page — <strong>before model</strong>,
+        <strong>during tools</strong>, <strong>after turn</strong> — show up in
+        ADK as concrete runtime pieces. With ADK 2.0, the "during tools" slot
+        stretches to cover human pauses that may last hours.
+      </p>
     </div>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Before model</span>
+        <h3>Runner + SessionService load the turn.</h3>
+        <p>
+          The <code>Runner</code> is the execution loop as an object. It joins an
+          agent to a session service that holds state and the event history. The
+          session is loaded before the model sees anything.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">adk_runner_session.py</span>
+          <a href="https://adk.dev/runtime/event-loop/" target="_blank" rel="noreferrer">ADK event loop</a>
+        </figcaption>
+        <Code code={runnerCode} lang="python" theme={theme} />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>During tools</span>
+        <h3>Confirmations gate side-effecting calls.</h3>
+        <p>
+          Setting <code>require_confirmation=True</code> on a <code>FunctionTool</code>
+          tells the runtime to pause before that tool executes. Refunds, work
+          orders, and production writes never happen on the model's say-so alone.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">adk_control_points.py</span>
+          <a href="https://adk.dev/tools-custom/confirmation/" target="_blank" rel="noreferrer">ADK confirmations</a>
+        </figcaption>
+        <Code code={confirmationsCode} lang="python" theme={theme} />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>During tools <span class="beta-pill">ADK 2.0 beta</span></span>
+        <h3>Human-in-the-loop pauses turn into first-class workflow nodes.</h3>
+        <p>
+          <code>require_confirmation</code> assumes the human answers in seconds.
+          Real approvals — refund queues, change-management tickets, shift
+          handoffs — take hours. ADK 2.0's <code>RequestInput</code> node turns
+          the pause into a persisted workflow step that resumes from the event
+          log when the human responds, however long that takes.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">adk_hitl_workflow.py</span>
+          <a href="https://adk.dev/workflows/human-input/" target="_blank" rel="noreferrer">ADK 2.0 human input</a>
+        </figcaption>
+        <Code code={hitlCode} lang="python" theme={theme} />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>After turn</span>
+        <h3>Eval files replay the trajectory as a test.</h3>
+        <p>
+          If a turn cannot be replayed, it cannot be trusted. ADK eval cases
+          assert over the trajectory — which tools were called and with what
+          arguments — not just the final answer.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">json</span>
+          <span class="code-filename">diagnostics.evalset.json</span>
+          <a href="https://adk.dev/evaluate/" target="_blank" rel="noreferrer">ADK evals</a>
+        </figcaption>
+        <Code code={evalCode} lang="json" theme={theme} />
+      </figure>
+    </article>
+
+    <article class="harness-row">
+      <div class="harness-row__intro">
+        <span>Across the turn</span>
+        <h3>Events are the trace primitive.</h3>
+        <p>
+          Every user message, model response, tool call, tool result, and state
+          delta is an <code>Event</code> appended to the session. Evals replay
+          them. Observability streams them. And HITL pauses resume by
+          reconstructing them — one event log, three uses.
+        </p>
+      </div>
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">adk_event_stream.py</span>
+          <a href="https://adk.dev/events/" target="_blank" rel="noreferrer">ADK events</a>
+        </figcaption>
+        <Code code={eventsCode} lang="python" theme={theme} />
+      </figure>
+    </article>
+
+    <a class="next-card" href="/codeact/">
+      <span>Next</span>
+      <strong>Onward to CodeAct: when the action <em>is</em> code</strong>
+    </a>
   </section>
 </SiteLayout>

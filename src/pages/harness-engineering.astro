@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 ---
 
 <SiteLayout current="harness-engineering" title="Harness engineering">
@@ -61,7 +62,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
       </div>
     </div>
 
-    <a class="next-card" href="/harness-examples/">
+    <a class="next-card" href={url('/harness-examples/')}>
       <span>Next</span>
       <strong>See it in Google ADK</strong>
     </a>

@@ -1,5 +1,6 @@
 ---
 import '../styles/page.css';
+import { url } from '../lib/url';
 
 const {
   current = 'overview',
@@ -33,7 +34,7 @@ const navItems = [
   <body>
     <div class="site-shell">
       <aside class="side-nav" aria-label="Section navigation">
-        <a class="brand" href="/">
+        <a class="brand" href={url('/')}>
           <span>Hanyu's</span>
           <strong>Agent Engineering Notes</strong>
         </a>
@@ -41,7 +42,7 @@ const navItems = [
           {navItems.map((item) => (
             <a
               class={current === item.key ? 'is-active' : ''}
-              href={item.href}
+              href={url(item.href)}
               aria-current={current === item.key ? 'page' : undefined}
             >
               <span>{item.kicker}</span>

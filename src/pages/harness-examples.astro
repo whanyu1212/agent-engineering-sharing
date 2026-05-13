@@ -1,6 +1,7 @@
 ---
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 
 const runnerCode = `from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -251,7 +252,7 @@ const theme = 'github-light';
       </figure>
     </article>
 
-    <a class="next-card" href="/codeact/">
+    <a class="next-card" href={url('/codeact/')}>
       <span>Next</span>
       <strong>Onward to CodeAct: when the action <em>is</em> code</strong>
     </a>

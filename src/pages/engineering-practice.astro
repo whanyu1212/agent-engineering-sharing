@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 ---
 
 <SiteLayout current="practice" title="Tools: the real source of agent capability">
@@ -15,7 +16,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
     </div>
 
     <div class="tools-grid">
-      <a class="tool-card is-featured" href="/function-tools/">
+      <a class="tool-card is-featured" href={url('/function-tools/')}>
         <span class="tool-star" aria-label="Deep dive">*</span>
         <span class="tool-kind">Typed action</span>
         <h3>Function tools</h3>
@@ -33,7 +34,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
           agents.
         </p>
       </article>
-      <a class="tool-card is-featured" href="/skills/">
+      <a class="tool-card is-featured" href={url('/skills/')}>
         <span class="tool-star" aria-label="Deep dive">*</span>
         <span class="tool-kind">Packaged procedure</span>
         <h3>Skills</h3>
@@ -42,7 +43,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
           examples. Good for domain workflows that need consistent execution.
         </p>
       </a>
-      <a class="tool-card is-featured" href="/code-execution/">
+      <a class="tool-card is-featured" href={url('/code-execution/')}>
         <span class="tool-star" aria-label="Deep dive">*</span>
         <span class="tool-kind">Runtime feedback</span>
         <h3>Code execution</h3>

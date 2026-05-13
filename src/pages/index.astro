@@ -1,5 +1,6 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 ---
 
 <SiteLayout current="overview">
@@ -12,8 +13,8 @@ import SiteLayout from '../layouts/SiteLayout.astro';
       around Google ADK and the CodeAct paradigm.
     </p>
     <div class="landing-anchors">
-      <a href="/what-is-agent/">Start with the agent loop <span aria-hidden="true">→</span></a>
-      <a href="/harness-engineering/">Skip to the harness <span aria-hidden="true">→</span></a>
+      <a href={url('/what-is-agent/')}>Start with the agent loop <span aria-hidden="true">→</span></a>
+      <a href={url('/harness-engineering/')}>Skip to the harness <span aria-hidden="true">→</span></a>
     </div>
   </section>
 
@@ -32,7 +33,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
           <li>Confirmations, eval files, event logs, HITL pauses — all live in the harness layer, not the prompt.</li>
           <li>Models keep getting better. Harnesses are what differentiate good agent systems from fragile ones.</li>
         </ul>
-        <a class="thesis-card__link" href="/harness-engineering/">Read the harness chapter <span aria-hidden="true">→</span></a>
+        <a class="thesis-card__link" href={url('/harness-engineering/')}>Read the harness chapter <span aria-hidden="true">→</span></a>
       </article>
 
       <article class="thesis-card">
@@ -43,7 +44,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
           <li>Code composes. JSON tool schemas don't — every new combination is a new prompt-engineering problem.</li>
           <li>Microsoft Agent Framework adopted CodeAct in early 2026. Google ADK ships a code executor. The direction is clear.</li>
         </ul>
-        <a class="thesis-card__link" href="/codeact/">Read the CodeAct chapter <span aria-hidden="true">→</span></a>
+        <a class="thesis-card__link" href={url('/codeact/')}>Read the CodeAct chapter <span aria-hidden="true">→</span></a>
       </article>
     </div>
   </section>
@@ -96,7 +97,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
         <span>Observability</span>
         <h3>OpenTelemetry-aligned tooling</h3>
         <p>Langfuse, Opik, and Arize Phoenix — each shown in the eval chapter as a different way teams close the feedback loop.</p>
-        <a href="/eval-observability/">See the eval chapter <span aria-hidden="true">→</span></a>
+        <a href={url('/eval-observability/')}>See the eval chapter <span aria-hidden="true">→</span></a>
       </article>
     </div>
   </section>
@@ -108,17 +109,17 @@ import SiteLayout from '../layouts/SiteLayout.astro';
     </div>
 
     <ol class="toc-list">
-      <li><a href="/what-is-agent/"><span>01</span><strong>What is an agent?</strong><em>Models in a control loop: state, tools, observations, and stopping criteria.</em></a></li>
-      <li><a href="/orchestration/"><span>02</span><strong>ReAct vs graph</strong><em>Flexible model-led loops against explicit workflow graphs.</em></a></li>
-      <li><a href="/engineering-practice/"><span>03</span><strong>Tools &amp; capability</strong><em>Function tools, MCP, skills, code execution, retrieval, and human handoff.</em></a></li>
-      <li><a href="/function-tools/"><span>03A</span><strong>Function tools</strong><em>The narrowest useful tool form.</em></a></li>
-      <li><a href="/skills/"><span>03B</span><strong>Skills</strong><em>Packaged repeatable know-how.</em></a></li>
-      <li><a href="/code-execution/"><span>03C</span><strong>Code execution</strong><em>Code execution as a tool form — the runtime piece behind CodeAct.</em></a></li>
-      <li><a href="/eval-observability/"><span>04</span><strong>Eval &amp; observability</strong><em>Traces explain what happened. Evals tell whether it was good enough.</em></a></li>
-      <li><a href="/harness-engineering/"><span>05</span><strong>Harness concept</strong><em>The runtime boundary around state, tools, permissions, replay, and tests.</em></a></li>
-      <li><a href="/harness-examples/"><span>05A</span><strong>ADK harness examples</strong><em>Runner, confirmations, HITL, evals, events — the harness made concrete.</em></a></li>
-      <li><a href="/codeact/"><span>06</span><strong>CodeAct</strong><em>The action shape that scales. Defended properly, with the trade-off named.</em></a></li>
-      <li><a href="/codeact-ds-agent/"><span>06A</span><strong>A specialized ML agent</strong><em>End-to-end Kaggle workflow: function tool for the CLI, skill for the modeling sweep, CodeAct in between.</em></a></li>
+      <li><a href={url('/what-is-agent/')}><span>01</span><strong>What is an agent?</strong><em>Models in a control loop: state, tools, observations, and stopping criteria.</em></a></li>
+      <li><a href={url('/orchestration/')}><span>02</span><strong>ReAct vs graph</strong><em>Flexible model-led loops against explicit workflow graphs.</em></a></li>
+      <li><a href={url('/engineering-practice/')}><span>03</span><strong>Tools &amp; capability</strong><em>Function tools, MCP, skills, code execution, retrieval, and human handoff.</em></a></li>
+      <li><a href={url('/function-tools/')}><span>03A</span><strong>Function tools</strong><em>The narrowest useful tool form.</em></a></li>
+      <li><a href={url('/skills/')}><span>03B</span><strong>Skills</strong><em>Packaged repeatable know-how.</em></a></li>
+      <li><a href={url('/code-execution/')}><span>03C</span><strong>Code execution</strong><em>Code execution as a tool form — the runtime piece behind CodeAct.</em></a></li>
+      <li><a href={url('/eval-observability/')}><span>04</span><strong>Eval &amp; observability</strong><em>Traces explain what happened. Evals tell whether it was good enough.</em></a></li>
+      <li><a href={url('/harness-engineering/')}><span>05</span><strong>Harness concept</strong><em>The runtime boundary around state, tools, permissions, replay, and tests.</em></a></li>
+      <li><a href={url('/harness-examples/')}><span>05A</span><strong>ADK harness examples</strong><em>Runner, confirmations, HITL, evals, events — the harness made concrete.</em></a></li>
+      <li><a href={url('/codeact/')}><span>06</span><strong>CodeAct</strong><em>The action shape that scales. Defended properly, with the trade-off named.</em></a></li>
+      <li><a href={url('/codeact-ds-agent/')}><span>06A</span><strong>A specialized ML agent</strong><em>End-to-end Kaggle workflow: function tool for the CLI, skill for the modeling sweep, CodeAct in between.</em></a></li>
     </ol>
   </section>
 </SiteLayout>

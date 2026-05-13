@@ -1,6 +1,7 @@
 ---
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 
 const jsonToolTrace = `# Same task: "Top 3 machines by downtime in the last 30 days."
 # JSON tool-call path — four model turns, four roundtrips.
@@ -138,7 +139,7 @@ print(top.to_string())
         The JSON side below shows the actual wire shape: the model emits a
         <code>function_call</code> part, the runtime dispatches it, and a
         <code>function_response</code> comes back on the next turn. (For the
-        mechanism in detail, see <a href="/function-tools/">chapter 03A</a>.)
+        mechanism in detail, see <a href={url('/function-tools/')}>chapter 03A</a>.)
         Compare it against the CodeAct side, where the same four turns collapse
         into one Python block.
       </p>
@@ -221,7 +222,7 @@ print(top.to_string())
       </article>
     </div>
 
-    <a class="next-card" href="/codeact-ds-agent/">
+    <a class="next-card" href={url('/codeact-ds-agent/')}>
       <span>Next</span>
       <strong>See it run end-to-end: a Kaggle-driven ML agent</strong>
     </a>

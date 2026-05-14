@@ -282,29 +282,43 @@ joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
       </div>
     </div>
 
-    <div class="signal-panel" style="margin-top: 36px;">
-      <h3>The scoreboard</h3>
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">The scoreboard</p>
+      <h2>By the numbers.</h2>
+    </div>
+
+    <div class="text-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
       <div>
-        <article>
-          <span>Turns</span>
-          <strong>ReAct: 17+ model turns across the workflow. CodeAct: 3. Each ReAct turn is a network roundtrip and a fresh model pass over the growing context.</strong>
-        </article>
-        <article>
-          <span>Tools shipped</span>
-          <strong>ReAct: 13+ purpose-built tools, each with a schema the developer maintains. CodeAct: 2 function tools (<code>kaggle_search</code>, <code>kaggle_download</code>) and 1 skill (<code>ml-baseline</code>) — and CodeAct calls them inside its scripts.</strong>
-        </article>
-        <article>
-          <span>Composition</span>
-          <strong>ReAct can only combine ops the developer pre-wired into tools. CodeAct combines anything pandas, sklearn, and the language can express — and still calls the typed tools where they help.</strong>
-        </article>
+        <span class="tool-kind">Turns</span>
+        <h3>17+ vs 3</h3>
+        <p>
+          <strong>ReAct:</strong> 17+ model turns across the workflow. Each turn is a network roundtrip and a fresh pass over the growing context.
+          <br/><br/>
+          <strong>CodeAct:</strong> 3 turns.
+        </p>
+      </div>
+      <div>
+        <span class="tool-kind">Tools shipped</span>
+        <h3>13+ vs 3</h3>
+        <p>
+          <strong>ReAct:</strong> 13+ purpose-built tools, each with a custom schema the developer must maintain.
+          <br/><br/>
+          <strong>CodeAct:</strong> 2 function tools (<code>kaggle_search</code>, <code>kaggle_download</code>) and 1 skill (<code>ml-baseline</code>).
+        </p>
+      </div>
+      <div>
+        <span class="tool-kind">Composition</span>
+        <h3>Bounded vs Open</h3>
+        <p>
+          <strong>ReAct:</strong> Can only combine operations the developer explicitly pre-wired into tools.
+          <br/><br/>
+          <strong>CodeAct:</strong> Combines anything pandas, sklearn, and the language can express.
+        </p>
       </div>
     </div>
 
     <p class="chapter-close">
-      The right frame isn't "CodeAct or tools." It's "CodeAct that calls
-      tools and skills where they belong." Function tools and skills don't
-      lose value in a CodeAct system — they become reusable building blocks
-      inside scripts the model writes. ReAct can't do that.
+      The right frame isn't "CodeAct vs. tools." It is a <strong>hybrid approach: CodeAct + skills</strong>, using <strong>function tools</strong> as a strict fallback or structured harness. Function tools and skills don't lose value in a CodeAct system — they become reliable, typed building blocks inside the scripts the model writes. ReAct can't do that.
     </p>
   </section>
 </SiteLayout>

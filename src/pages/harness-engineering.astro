@@ -44,25 +44,36 @@ import { url } from '../lib/url';
       Inputs flow in. The harness shapes every turn. Evidence flows out.
     </p>
 
-    <div class="signal-panel">
-      <h3>Three slots, every turn</h3>
-      <div>
-        <article>
-          <span>Before model</span>
-          <strong>load context, expose tools</strong>
-        </article>
-        <article>
-          <span>During tools</span>
-          <strong>enforce policy, capture observations</strong>
-        </article>
-        <article>
-          <span>After turn</span>
-          <strong>commit deltas, append trace data</strong>
-        </article>
-      </div>
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">The loop</p>
+      <h2>Three slots, every turn.</h2>
     </div>
 
-    <div class="section-head compact-head">
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Before the model</strong>
+          <p>Load the context, assemble the instructions, and expose the available tools.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>During tool execution</strong>
+          <p>Enforce security policies, gate sensitive actions, and capture the tool observations.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>After the turn</strong>
+          <p>Commit state deltas, update the persistent session history, and append the trace data.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
       <p class="eyebrow">Where the effort moved</p>
       <h2>From <em>prompt</em> engineering to <em>context</em> engineering to <em>harness</em> engineering.</h2>
       <p>

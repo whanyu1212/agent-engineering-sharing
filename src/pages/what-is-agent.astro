@@ -1,6 +1,7 @@
 ---
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 
 const agentLoopCode = `while not done:
     context = build_context(state, memory, user_goal)
@@ -8,6 +9,42 @@ const agentLoopCode = `while not done:
     observation = execute(action)
     state = update_state(state, action, observation)
     done = should_stop(state, observation)`;
+
+const runtimeCode = `final_response_text = None
+
+async for event in runner.run_async(
+    user_id=user_id,
+    session_id=session_id,
+    new_message=content,
+):
+    # Inspect the stream: author, content parts, actions, and final/displayable status.
+    # print(f"[Event] author={event.author}, final={event.is_final_response()}, content={event.content}, actions={event.actions}")
+
+    # Tool calls and tool responses are content parts, not separate event classes.
+    for call in event.get_function_calls():
+        print(f"tool call: {call.name}({call.args})")
+
+    for response in event.get_function_responses():
+        print(f"tool response: {response.name} -> {response.response}")
+
+    if event.actions and event.actions.state_delta:
+        print(f"state delta: {event.actions.state_delta}")
+
+    # is_final_response() marks an event suitable for the client to display or act on.
+    if event.is_final_response():
+        if event.long_running_tool_ids:
+            final_response_text = "Long-running tool is pending."
+        elif event.content and event.content.parts and event.content.parts[0].text:
+            final_response_text = event.content.parts[0].text
+        elif event.get_function_responses():
+            final_response_text = str(event.get_function_responses()[0].response)
+        elif event.actions and event.actions.escalate:
+            final_response_text = f"Agent escalated: {event.error_message or 'No specific message.'}"
+        else:
+            final_response_text = event.error_message or "[final non-text event]"
+        break
+
+print(f"<<< Agent Response: {final_response_text or '[no final response emitted]'}")`;
 ---
 
 <SiteLayout current="agent" title="What is an agent?">
@@ -91,5 +128,19 @@ const agentLoopCode = `while not done:
       </figcaption>
       <Code code={agentLoopCode} lang="python" theme="github-light" />
     </figure>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">runtime_turn.py</span>
+        <span class="code-tag">ADK runtime loop</span>
+      </figcaption>
+      <Code code={runtimeCode} lang="python" theme="github-light" />
+    </figure>
+
+    <a class="next-card" href={url('/session-state-memory/')}>
+      <span>Next</span>
+      <strong>Separate the thread, scratchpad, and long-term memory</strong>
+    </a>
   </section>
 </SiteLayout>

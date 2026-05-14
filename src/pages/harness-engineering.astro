@@ -10,7 +10,7 @@ import { url } from '../lib/url';
       <h1>Harness engineering: where agents become software.</h1>
       <p>
         Tracing tells you what happened. The harness is what makes sure
-        something <em>happens the same way twice</em>.
+        the next run stays inside the same enforced boundaries.
       </p>
     </div>
 
@@ -57,10 +57,67 @@ import { url } from '../lib/url';
         </article>
         <article>
           <span>After turn</span>
-          <strong>commit state, write trace</strong>
+          <strong>commit deltas, append trace data</strong>
         </article>
       </div>
     </div>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Where the effort moved</p>
+      <h2>From <em>prompt</em> engineering to <em>context</em> engineering to <em>harness</em> engineering.</h2>
+      <p>
+        Each step adds a layer of control without removing the layers
+        underneath. Prompts still matter; context still matters. The
+        change is where the <em>load-bearing</em> work happens now — and
+        which failures the team treats as engineering bugs rather than
+        prompt-tuning chores.
+      </p>
+    </div>
+
+    <ol class="shift-track">
+      <li class="shift-stage">
+        <span class="shift-stage__kicker">Stage 01</span>
+        <h3>Prompt engineering</h3>
+        <p class="shift-stage__lede">Tune the words you send.</p>
+        <ul>
+          <li>One model call, one carefully written prompt.</li>
+          <li>Failures look like wording problems; fixes are edits.</li>
+          <li>Caps out fast as soon as state, tools, or branches enter.</li>
+        </ul>
+      </li>
+      <li class="shift-arrow" aria-hidden="true">
+        <svg viewBox="0 0 60 24" role="presentation">
+          <path d="M 4 12 H 50"></path>
+          <path d="M 44 6 L 54 12 L 44 18"></path>
+        </svg>
+      </li>
+      <li class="shift-stage">
+        <span class="shift-stage__kicker">Stage 02</span>
+        <h3>Context engineering</h3>
+        <p class="shift-stage__lede">Build the right inputs.</p>
+        <ul>
+          <li>Retrieval, memory, tool selection, schemas, examples.</li>
+          <li>Each turn assembles the context the model actually needs.</li>
+          <li>Failures move from wording to <em>what the model can see</em>.</li>
+        </ul>
+      </li>
+      <li class="shift-arrow" aria-hidden="true">
+        <svg viewBox="0 0 60 24" role="presentation">
+          <path d="M 4 12 H 50"></path>
+          <path d="M 44 6 L 54 12 L 44 18"></path>
+        </svg>
+      </li>
+      <li class="shift-stage is-now">
+        <span class="shift-stage__kicker">Stage 03 · here</span>
+        <h3>Harness engineering</h3>
+        <p class="shift-stage__lede">Make the runtime enforce it.</p>
+        <ul>
+          <li>Approval gates, eval files, event logs, HITL pauses, trajectory checks.</li>
+          <li>Invariants live in code around the loop, not in the prompt.</li>
+          <li>Failures become regressions the team can test for.</li>
+        </ul>
+      </li>
+    </ol>
 
     <a class="next-card" href={url('/harness-examples/')}>
       <span>Next</span>

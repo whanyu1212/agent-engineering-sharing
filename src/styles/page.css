@@ -926,6 +926,404 @@ code {
   text-transform: uppercase;
 }
 
+/* Diagrams for additional design patterns (chapter 02).
+   All inherit the same vocabulary as .react-diagram / .graph-diagram:
+   - .mini-diagram for the gridded canvas
+   - .react-node-svg for rounded rectangle nodes
+   - the *-links groups for arrowed paths
+   - .loop-caption for the small caption text under the diagram
+
+   What's pattern-specific:
+   - the "special" node (plan, critic, coordinator) fills with accent-soft
+     to stand out from the worker nodes
+   - feedback / return arrows use a dashed stroke + lighter color so the
+     reader sees the loop without needing a label */
+
+.planner-diagram,
+.reflection-diagram,
+.multi-diagram,
+.codeact-diagram {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: 12px 18px;
+}
+
+.planner-diagram svg,
+.reflection-diagram svg,
+.multi-diagram svg,
+.codeact-diagram svg {
+  display: block;
+  height: auto;
+  max-height: 240px;
+  max-width: 100%;
+  overflow: visible;
+}
+
+.planner-links path,
+.reflection-links path,
+.multi-links path,
+.codeact-links path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.planner-links path {
+  marker-end: url("#planner-arrow");
+}
+.reflection-links path {
+  marker-end: url("#reflection-arrow");
+}
+.multi-links path {
+  marker-end: url("#multi-arrow");
+}
+.codeact-links path {
+  marker-end: url("#codeact-arrow");
+}
+
+#planner-arrow path,
+#reflection-arrow path,
+#reflection-arrow-back path,
+#multi-arrow path,
+#codeact-arrow path {
+  fill: var(--accent);
+}
+
+/* Feedback / return arrows: dashed, slightly muted. */
+.reflection-links .reflection-feedback,
+.multi-links .multi-link-back,
+.codeact-links .codeact-link-back {
+  marker-end: url("#reflection-arrow-back");
+  opacity: 0.62;
+  stroke-dasharray: 4 4;
+}
+
+/* CodeAct "code block" node — a wider rounded-rect with accent-soft fill
+   and a subtle dashed inner cue, so it reads as "a block of code" rather
+   than another agent role. Sits between the model and the tool fanout. */
+.codeact-block rect {
+  fill: var(--accent-soft);
+  stroke: rgba(15, 107, 79, 0.5);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.codeact-block text {
+  dominant-baseline: middle;
+  fill: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  font-weight: 650;
+  text-anchor: middle;
+}
+
+.codeact-label-back {
+  fill: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+  text-anchor: start;
+  text-transform: uppercase;
+}
+
+/* Special nodes — fill with accent-soft to read as "the one in charge." */
+.react-node-svg.is-planner rect,
+.react-node-svg.is-critic rect,
+.react-node-svg.is-coordinator rect {
+  fill: var(--accent-soft);
+  stroke: rgba(15, 107, 79, 0.5);
+}
+
+/* Tiny labels that hover above / below paths in reflection diagram. */
+.reflection-label,
+.reflection-label-back {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.reflection-label-back {
+  opacity: 0.78;
+}
+
+/* pattern-card: container around each design pattern (diagram + bullets).
+   Each card stacks vertically: head -> diagram -> bullets. Different from
+   .compare-card (which assumes horizontal pairing) and .harness-row (which
+   is a 2-column intro/code layout). */
+.pattern-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 22px;
+  overflow: hidden;
+}
+
+.pattern-card__head {
+  padding: 22px 24px 16px;
+}
+
+.pattern-card__kicker {
+  color: var(--muted);
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.pattern-card__head h2 {
+  font-size: 1.34rem;
+  font-weight: 620;
+  letter-spacing: -0.005em;
+  line-height: 1.22;
+  margin: 0 0 10px;
+}
+
+.pattern-card__head p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 78ch;
+}
+
+.pattern-card .mini-diagram {
+  border-top: 1px solid var(--line);
+}
+
+.pattern-card__bullets {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 18px 24px 22px;
+}
+
+.pattern-card__bullets li {
+  color: var(--text);
+  line-height: 1.5;
+  padding-left: 18px;
+  position: relative;
+}
+
+.pattern-card__bullets li::before {
+  background: var(--accent);
+  border-radius: 50%;
+  content: "";
+  height: 6px;
+  left: 0;
+  position: absolute;
+  top: 8px;
+  width: 6px;
+}
+
+.pattern-card__bullets strong {
+  color: var(--ink);
+  font-weight: 720;
+}
+
+.pattern-card__footer {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0;
+  padding: 14px 24px;
+}
+
+.pattern-card__footer a {
+  color: var(--accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.pattern-card__footer a:hover {
+  text-decoration: underline;
+}
+
+/* wiring-section: nested subsection inside a pattern-card showing two
+   implementation wirings (subagent / agent-as-tool) for the multi-agent
+   pattern. Visually sits flush with the bottom of the parent card with
+   a top border separating it from the main bullets. */
+.wiring-section {
+  background: var(--surface-muted);
+  border-top: 1px solid var(--line);
+  padding: 22px 24px 24px;
+}
+
+.wiring-section__head {
+  margin-bottom: 16px;
+}
+
+.wiring-section__head h3 {
+  font-size: 1.1rem;
+  font-weight: 620;
+  letter-spacing: -0.004em;
+  margin: 0 0 8px;
+}
+
+.wiring-section__head p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 72ch;
+}
+
+/* 2-column grid for the wiring cards. Uses minmax(0, 1fr) so flex children
+   don't blow out the column width when content is wider than expected. */
+.wiring-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wiring-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.wiring-card__diagram {
+  background:
+    linear-gradient(rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.035) 1px, transparent 1px),
+    var(--canvas);
+  background-size: 14px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px;
+}
+
+.wiring-card__diagram svg {
+  display: block;
+  height: auto;
+  max-height: 140px;
+  max-width: 100%;
+}
+
+.wiring-card__body {
+  padding: 16px 18px 18px;
+}
+
+.wiring-card__kind {
+  color: var(--muted);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 760;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.wiring-card__body h4 {
+  font-size: 1.04rem;
+  font-weight: 620;
+  margin: 0 0 8px;
+}
+
+.wiring-card__body p {
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.wiring-card__body p code,
+.wiring-card__bullets code {
+  background: transparent;
+  color: var(--ink);
+  display: inline;
+  font-size: 0.88em;
+  font-weight: 600;
+  padding: 0;
+}
+
+.wiring-card__bullets {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wiring-card__bullets li {
+  color: var(--text);
+  font-size: 0.94rem;
+  line-height: 1.45;
+  padding-left: 14px;
+  position: relative;
+}
+
+.wiring-card__bullets li::before {
+  background: var(--accent);
+  border-radius: 50%;
+  content: "";
+  height: 5px;
+  left: 0;
+  position: absolute;
+  top: 8px;
+  width: 5px;
+}
+
+.wiring-card__bullets strong {
+  color: var(--ink);
+  font-weight: 720;
+}
+
+/* Wiring diagram arrow styling: forward strokes solid, return strokes
+   dashed. The subagent diagram has both (spawn + return); agent-as-tool
+   uses a single curved call+return loop. */
+.wiring-links path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.4;
+}
+
+.wiring-link-fork {
+  marker-end: url("#wiring-sub-arrow");
+}
+
+.wiring-link-return {
+  marker-end: url("#wiring-sub-arrow");
+  opacity: 0.62;
+  stroke-dasharray: 4 4;
+}
+
+.wiring-link-call {
+  marker-end: url("#wiring-aat-arrow");
+}
+
+#wiring-sub-arrow path,
+#wiring-aat-arrow path {
+  fill: var(--accent);
+}
+
+.wiring-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.wiring-label--left {
+  text-anchor: end;
+}
+
+.wiring-label--right {
+  text-anchor: start;
+}
+
+.wiring-label--side {
+  text-anchor: middle;
+}
+
 .compare-card ul {
   display: grid;
   gap: 12px;
@@ -979,6 +1377,27 @@ code {
   font-weight: 560;
   line-height: 1.35;
   margin-top: 6px;
+}
+
+.signal-panel--definitions article span,
+.when-panel--definitions .definition-token {
+  color: var(--accent);
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 760;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
+}
+
+.when-panel--definitions {
+  margin-bottom: 18px;
+}
+
+.when-panel--definitions p {
+  color: var(--text);
+  line-height: 1.45;
+  margin: 8px 0 0;
 }
 
 .use-cases {
@@ -1073,7 +1492,10 @@ a.tool-card:hover {
   text-transform: uppercase;
 }
 
-.detail-card p code {
+.detail-card p code,
+.text-grid p code,
+.practice-section p code,
+.practice-section li code {
   background: var(--surface-muted);
   border: 1px solid var(--line);
   border-radius: 4px;
@@ -1151,6 +1573,113 @@ a.tool-card:hover {
   font-style: italic;
   margin: 4px 0 22px;
   text-align: center;
+}
+
+/* shift-track: three stages of where engineering effort sits (prompt
+   → context → harness), with arrows between them. Reuses the accent-tab
+   card vocabulary from .detail-card; arrows are tiny SVGs that collapse
+   on narrow screens. */
+.shift-track {
+  align-items: stretch;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+}
+
+.shift-stage {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--line-strong);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.shift-stage.is-now {
+  background:
+    linear-gradient(180deg, rgba(15, 107, 79, 0.07), transparent 44%),
+    var(--surface);
+  border-color: rgba(15, 107, 79, 0.36);
+  border-top-color: var(--accent);
+}
+
+.shift-stage__kicker {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.74rem;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.shift-stage.is-now .shift-stage__kicker {
+  color: var(--accent);
+}
+
+.shift-stage h3 {
+  font-size: 1.15rem;
+  font-weight: 620;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.shift-stage__lede {
+  color: var(--ink);
+  font-size: 0.98rem;
+  font-weight: 580;
+  margin: 0;
+}
+
+.shift-stage ul {
+  color: var(--text);
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.shift-stage li {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  padding-left: 14px;
+  position: relative;
+}
+
+.shift-stage li::before {
+  background: var(--accent);
+  border-radius: 50%;
+  content: "";
+  height: 5px;
+  left: 0;
+  position: absolute;
+  top: 8px;
+  width: 5px;
+}
+
+.shift-arrow {
+  align-self: center;
+  display: flex;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.shift-arrow svg {
+  display: block;
+  height: 18px;
+  width: 44px;
+}
+
+.shift-arrow svg path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
 }
 
 .harness-row {
@@ -1342,6 +1871,14 @@ a.tool-card:hover {
     border-bottom: 1px solid var(--line);
     border-right: 0;
   }
+
+  .shift-track {
+    grid-template-columns: 1fr;
+  }
+
+  .shift-arrow svg {
+    transform: rotate(90deg);
+  }
 }
 
 .next-card {
@@ -1484,6 +2021,364 @@ a.tool-card:hover {
   line-height: 1.35;
 }
 
+.signal-panel--relationship {
+  margin-bottom: 18px;
+}
+
+.signal-panel--relationship article {
+  background: var(--surface);
+}
+
+.signal-panel--relationship span {
+  color: var(--accent);
+}
+
+.signal-panel--relationship strong {
+  max-width: 30ch;
+}
+
+/* Session/state/memory page: visual anchors for concept boundaries and practices. */
+.glossary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  list-style: none;
+  margin: 24px 0 32px;
+  padding: 0;
+}
+
+.glossary-list li {
+  color: var(--text);
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.glossary-list strong {
+  font-weight: 650;
+  margin-right: 6px;
+}
+
+.color-context { color: var(--ink); }
+.color-session { color: #4a7198; }
+.color-state { color: var(--accent); }
+.color-memory { color: #6741d9; }
+
+.scope-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  margin: 16px 0 32px;
+  padding: 0;
+}
+
+.scope-list li {
+  border-left: 2px solid var(--line);
+  color: var(--text);
+  font-size: 0.95rem;
+  padding-left: 16px;
+}
+
+.scope-list strong {
+  color: var(--ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+}
+
+.timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  list-style: none;
+  margin: 24px 0 32px;
+  padding: 0;
+}
+
+.timeline-list li {
+  display: flex;
+  gap: 16px;
+}
+
+.timeline-number {
+  color: var(--accent);
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  min-width: 24px;
+  padding-top: 2px;
+}
+
+.timeline-list strong {
+  color: var(--ink);
+  display: block;
+  font-weight: 650;
+  margin-bottom: 4px;
+}
+
+.timeline-list p {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.timeline-list p code {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  display: inline;
+  font-size: 0.9em;
+  padding: 1px 4px;
+}
+.context-diagram {
+  border-top: 1px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  margin: 18px 0;
+}
+
+.context-diagram svg {
+  display: block;
+  height: 188px;
+  width: 100%;
+}
+
+.context-diagram__links path {
+  fill: none;
+  marker-end: url("#context-arrow");
+  stroke: var(--line-strong);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+#context-arrow path {
+  fill: var(--line-strong);
+}
+
+.context-node-svg rect {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1.2;
+}
+
+.context-node-svg text {
+  dominant-baseline: middle;
+  fill: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 780;
+  letter-spacing: 0.03em;
+  text-anchor: middle;
+  text-transform: uppercase;
+}
+
+.context-node-svg__subtext {
+  fill: var(--muted);
+  font-size: 11.5px;
+  font-weight: 620;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.context-node-svg--session rect,
+.concept-card--session,
+.concept-detail--session {
+  border-top-color: #4a7198;
+}
+
+.context-node-svg--session rect {
+  fill: rgba(74, 113, 152, 0.08);
+  stroke: rgba(74, 113, 152, 0.4);
+}
+
+.context-node-svg--state rect,
+.concept-card--state,
+.concept-detail--state {
+  border-top-color: var(--accent);
+}
+
+.context-node-svg--state rect {
+  fill: rgba(15, 107, 79, 0.09);
+  stroke: rgba(15, 107, 79, 0.4);
+}
+
+.context-node-svg--memory rect,
+.concept-card--memory,
+.concept-detail--memory {
+  border-top-color: #6741d9;
+}
+
+.context-node-svg--memory rect {
+  fill: rgba(103, 65, 217, 0.06);
+  stroke: rgba(103, 65, 217, 0.4);
+}
+
+.signal-panel--context {
+  margin-bottom: 20px;
+}
+
+.signal-panel--context > div {
+  align-items: stretch;
+}
+
+.concept-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 156px;
+  padding: 22px 22px 20px;
+  position: relative;
+}
+
+.concept-card strong {
+  font-size: 1.02rem;
+  line-height: 1.45;
+  max-width: 28ch;
+}
+
+.concept-card--session {
+  background:
+    linear-gradient(180deg, rgba(74, 113, 152, 0.075), transparent 44%),
+    var(--surface);
+  box-shadow: inset 0 3px 0 #4a7198;
+}
+
+.concept-card--state {
+  background:
+    linear-gradient(180deg, rgba(15, 107, 79, 0.075), transparent 44%),
+    var(--surface);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.concept-card--memory {
+  background:
+    linear-gradient(180deg, rgba(103, 65, 217, 0.06), transparent 44%),
+    var(--surface);
+  box-shadow: inset 0 3px 0 #6741d9;
+}
+
+.concept-card span {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 780;
+  letter-spacing: 0.06em;
+  margin-bottom: 0;
+  text-transform: uppercase;
+}
+
+.concept-card--session span,
+.concept-detail--session .tool-kind {
+  color: #4a7198;
+}
+
+.concept-card--state span,
+.concept-detail--state .tool-kind {
+  color: var(--accent);
+}
+
+.concept-card--memory span,
+.concept-detail--memory .tool-kind {
+  color: #6741d9;
+}
+
+.concept-detail--session,
+.concept-detail--state,
+.concept-detail--memory {
+  background-color: var(--surface);
+}
+
+.concept-detail h3 {
+  margin-bottom: 8px;
+}
+
+.practices-split {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 32px 0;
+}
+
+@media (max-width: 640px) {
+  .practices-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.practice-section {
+  padding: 24px;
+}
+
+.practice-section--do {
+  background:
+    linear-gradient(180deg, rgba(15, 107, 79, 0.08), transparent 44%),
+    var(--surface);
+  border-top: 3px solid var(--accent);
+}
+
+.practice-section--avoid {
+  background:
+    linear-gradient(180deg, rgba(179, 48, 42, 0.08), transparent 44%),
+    var(--surface);
+  border-top: 3px solid #b3302a;
+}
+
+.practice-section h3 {
+  font-size: 1.1rem;
+  margin: 0 0 8px;
+}
+
+.practice-section p {
+  color: var(--text);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.practice-section .tool-kind {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin-bottom: 16px;
+  padding: 5px 10px;
+}
+
+.practice-section--do .tool-kind {
+  background: rgba(15, 107, 79, 0.08);
+  color: var(--accent);
+}
+
+.practice-section--avoid .tool-kind {
+  background: rgba(179, 48, 42, 0.08);
+  color: #b3302a;
+}
+
+.practice-section ul {
+  margin: 0;
+  padding: 0 0 0 24px;
+}
+
+.practice-section li {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+  padding-left: 4px;
+}
+
+.practice-section li:last-child {
+  margin-bottom: 0;
+}
+
+.practice-section li strong {
+  color: var(--ink);
+  display: block;
+  font-weight: 650;
+  margin-bottom: 6px;
+}
+
 .examples-section {
   margin-top: 40px;
 }
@@ -1552,6 +2447,97 @@ a.tool-card:hover {
   margin: 0;
 }
 
+/* vs-phase: side-by-side ReAct/CodeAct comparison used on chapter 06A.
+   Each phase has an intro block (label + heading + paragraph) followed
+   by a 2-column compare-grid that holds two code cards. */
+.vs-phase {
+  margin-bottom: 40px;
+}
+
+.vs-phase__head {
+  margin-bottom: 14px;
+}
+
+.vs-phase__label {
+  color: var(--muted);
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 760;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.vs-phase__head h2 {
+  font-size: 1.42rem;
+  font-weight: 620;
+  letter-spacing: -0.005em;
+  line-height: 1.18;
+  margin: 0 0 10px;
+}
+
+.vs-phase__head p {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 78ch;
+}
+
+.vs-phase__head p code {
+  background: var(--surface-muted);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.9em;
+  padding: 1px 4px;
+}
+
+/* vs-grid: 2-column layout layered on top of compare-grid so it inherits
+   the responsive collapse rule (compare-grid → 1 column at <=900px). */
+.vs-grid {
+  align-items: start;
+  gap: 14px;
+}
+
+/* vs-card: a code-card variant with a colored top tab indicating the
+   action shape (ReAct in red-ish; CodeAct in site accent green). The
+   top tab is implemented as a top border so it reads as a thicker bar
+   that bleeds to the corners. */
+.vs-card {
+  position: relative;
+}
+
+.vs-card--react {
+  border-top: 4px solid #b3302a;
+}
+
+.vs-card--codeact {
+  border-top: 4px solid var(--accent);
+}
+
+/* vs-pill: small caps label inside the figcaption that names the shape.
+   Mirrors the top-tab color so the card has redundant cues (color + text). */
+.vs-pill {
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 720;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.vs-pill--react {
+  background: #fbe7e5;
+  border-color: rgba(179, 48, 42, 0.34);
+  color: #8a221e;
+}
+
+.vs-pill--codeact {
+  background: var(--accent-soft);
+  border-color: rgba(15, 107, 79, 0.34);
+  color: var(--accent);
+}
+
 @media (max-width: 860px) {
   .site-shell {
     grid-template-columns: 1fr;
@@ -1597,7 +2583,8 @@ a.tool-card:hover {
   .harness-map,
   .feedback-grid,
   .signal-panel > div,
-  .example-grid {
+  .example-grid,
+  .wiring-grid {
     grid-template-columns: 1fr;
   }
 

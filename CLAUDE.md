@@ -51,4 +51,4 @@ Code blocks are presented as `<figure class="code-card">` with `<figcaption>` (f
 
 ## Content model
 
-The pages tell a linear story (Overview → 01 What is an agent → 02 Orchestration → 03 Tools & capability with three sub-pages 03A/03B/03C → 04 Eval & observability → 05 Harness, with sub-page 05A). The `kicker` field in `navItems` encodes that ordering. When adding a page, pick a kicker that fits the sequence rather than appending to the end.
+The pages tell a linear story (Overview → 01 What is an agent → 01A Session/state/memory → 02 Orchestration → 03 Tools & capability with three sub-pages 03A/03B/03C → 04 Eval & observability → 05 Harness, with sub-page 05A). The `kicker` field in `navItems` encodes that ordering. When adding a page, pick a kicker that fits the sequence rather than appending to the end.

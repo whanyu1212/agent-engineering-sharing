@@ -1,136 +1,490 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
 ---
 
-<SiteLayout current="orchestration" title="ReAct vs graph orchestration">
+<SiteLayout current="orchestration" title="Agent design patterns">
   <section class="section page-section">
     <div class="section-head">
-      <p class="eyebrow">Orchestration choice</p>
-      <h1>ReAct loop vs graph / state machine</h1>
-      <p>Same ingredients. Different control surface.</p>
+      <p class="eyebrow">Six shapes</p>
+      <h1>Agent design patterns: how the agent <em>thinks</em>, not just what it does.</h1>
+      <p>
+        Before tools, code execution, evals, or harnesses, there's a more
+        fundamental question — what shape does the agent run in? A ReAct
+        loop looks nothing like a planner-executor; a reflective agent has
+        a step a multi-agent system doesn't; a graph has nodes the others
+        only imply; CodeAct collapses several JSON roundtrips into one
+        executable block. These are the patterns that decide where
+        roundtrips happen, who decides what, and how errors recover. Pick
+        the wrong shape and no amount of harness engineering downstream
+        will save the workflow.
+      </p>
     </div>
 
-    <div class="compare-grid">
-      <article class="compare-card">
-        <div class="card-head">
-          <span class="card-label">Flexible</span>
-          <div>
-            <h3>ReAct loop</h3>
-            <p>Reason → Act → Observe → Repeat</p>
-          </div>
-        </div>
-        <div class="mini-diagram react-diagram" aria-label="ReAct loop diagram">
-          <svg viewBox="0 0 520 176" role="img" aria-labelledby="react-title">
-            <title id="react-title">ReAct loop: reason, act, observe, then repeat</title>
-            <defs>
-              <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
-                <path d="M0,0 L8,4 L0,8 Z"></path>
-              </marker>
-            </defs>
-            <g class="react-links">
-              <path d="M 168 56 H 212"></path>
-              <path d="M 308 56 H 352"></path>
-              <path d="M 412 78 C 412 130, 108 130, 108 80"></path>
-            </g>
-            <g class="react-node-svg">
-              <rect x="56" y="34" width="112" height="44" rx="22"></rect>
-              <text x="112" y="60">reason</text>
-            </g>
-            <g class="react-node-svg">
-              <rect x="212" y="34" width="96" height="44" rx="22"></rect>
-              <text x="260" y="60">act</text>
-            </g>
-            <g class="react-node-svg">
-              <rect x="352" y="34" width="112" height="44" rx="22"></rect>
-              <text x="408" y="60">observe</text>
-            </g>
-            <text class="loop-caption" x="260" y="148">model decides the next step each turn</text>
-          </svg>
-        </div>
-        <ul>
-          <li>Minimal orchestration; great for open-ended exploration.</li>
-          <li>Model decides the next step every turn.</li>
-          <li>Harder to guarantee path, retries, or state.</li>
-        </ul>
-      </article>
+    <!-- Pattern 01 — ReAct ------------------------------------------- -->
+    <article class="pattern-card">
+      <header class="pattern-card__head">
+        <span class="pattern-card__kicker">Pattern 01</span>
+        <h2>ReAct — Reason, Act, Observe, repeat.</h2>
+        <p>
+          The minimal cognitive shape. Each turn the model reasons about
+          what to do, picks a tool, observes the result, and decides the
+          next move. No plan, no roles, no critic — just a loop that runs
+          until the model says "done."
+        </p>
+      </header>
+      <div class="mini-diagram react-diagram" aria-label="ReAct loop diagram">
+        <svg viewBox="0 0 520 176" role="img" aria-labelledby="react-title">
+          <title id="react-title">ReAct loop: reason, act, observe, then repeat</title>
+          <defs>
+            <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+          <g class="react-links">
+            <path d="M 168 56 H 212"></path>
+            <path d="M 308 56 H 352"></path>
+            <path d="M 412 78 C 412 130, 108 130, 108 80"></path>
+          </g>
+          <g class="react-node-svg">
+            <rect x="56" y="34" width="112" height="44" rx="22"></rect>
+            <text x="112" y="60">reason</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="212" y="34" width="96" height="44" rx="22"></rect>
+            <text x="260" y="60">act</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="352" y="34" width="112" height="44" rx="22"></rect>
+            <text x="408" y="60">observe</text>
+          </g>
+          <text class="loop-caption" x="260" y="148">model decides the next step each turn</text>
+        </svg>
+      </div>
+      <ul class="pattern-card__bullets">
+        <li><strong>Strength:</strong> open-ended exploration where the next step depends on what was just learned.</li>
+        <li><strong>Failure mode:</strong> long traces drift; the model loses track of the original goal and burns roundtrips.</li>
+        <li><strong>Fits:</strong> debugging assistants, research agents, anything where the path can't be enumerated in advance.</li>
+      </ul>
+    </article>
 
-      <article class="compare-card graph-card">
-        <div class="card-head">
-          <span class="card-label">Structured</span>
-          <div>
-            <h3>Graph / state machine</h3>
-            <p>Nodes + edges + typed transitions</p>
-          </div>
+    <!-- Pattern 02 — Planner-Executor -------------------------------- -->
+    <article class="pattern-card">
+      <header class="pattern-card__head">
+        <span class="pattern-card__kicker">Pattern 02</span>
+        <h2>Planner-Executor — One agent plans, another executes.</h2>
+        <p>
+          A separate planning step produces a list of subtasks; an
+          executor (or executors) does them in order. The plan is
+          inspectable; failures can re-trigger only the failed subtask
+          rather than blowing up the whole loop. Costs more on the
+          happy path; saves time when the plan is reusable or the
+          executor is cheap.
+        </p>
+      </header>
+      <div class="mini-diagram planner-diagram" aria-label="Planner-Executor diagram">
+        <svg viewBox="0 0 520 220" role="img" aria-labelledby="planner-title">
+          <title id="planner-title">Planner-Executor: one planner produces a plan, three executors run the subtasks in sequence</title>
+          <defs>
+            <marker id="planner-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+          <g class="planner-links">
+            <path d="M 260 64 V 110"></path>
+            <path d="M 260 110 H 104 V 132"></path>
+            <path d="M 260 110 V 132"></path>
+            <path d="M 260 110 H 416 V 132"></path>
+            <path d="M 144 154 H 220"></path>
+            <path d="M 300 154 H 376"></path>
+          </g>
+          <g class="react-node-svg is-planner">
+            <rect x="184" y="20" width="152" height="44" rx="22"></rect>
+            <text x="260" y="46">plan</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="40" y="132" width="104" height="44" rx="22"></rect>
+            <text x="92" y="158">step 1</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="220" y="132" width="80" height="44" rx="22"></rect>
+            <text x="260" y="158">step 2</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="376" y="132" width="104" height="44" rx="22"></rect>
+            <text x="428" y="158">step 3</text>
+          </g>
+          <text class="loop-caption" x="260" y="200">planner decides the path; executors run it</text>
+        </svg>
+      </div>
+      <ul class="pattern-card__bullets">
+        <li><strong>Strength:</strong> the plan is auditable; subtasks can run in parallel or be retried in isolation.</li>
+        <li><strong>Failure mode:</strong> stale plan — if the world changes mid-execution, the executor follows yesterday's plan.</li>
+        <li><strong>Fits:</strong> multi-document workflows, batch ETL, anything where "what to do" is mostly knowable up front.</li>
+      </ul>
+    </article>
+
+    <!-- Pattern 03 — Reflection --------------------------------------- -->
+    <article class="pattern-card">
+      <header class="pattern-card__head">
+        <span class="pattern-card__kicker">Pattern 03</span>
+        <h2>Reflection — Generate, critique, revise.</h2>
+        <p>
+          The agent produces an output, then a critic (often the same
+          model with a different prompt) reviews it against the original
+          intent or a rubric and either approves or asks for a revision.
+          Two-step loop. Most useful where the cost of a wrong output is
+          much higher than the cost of one extra model call.
+        </p>
+      </header>
+      <div class="mini-diagram reflection-diagram" aria-label="Reflection loop diagram">
+        <svg viewBox="0 0 520 200" role="img" aria-labelledby="reflection-title">
+          <title id="reflection-title">Reflection loop: actor produces a draft, critic reviews it, feedback returns to the actor</title>
+          <defs>
+            <marker id="reflection-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+            <marker id="reflection-arrow-back" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+          <g class="reflection-links">
+            <path d="M 184 76 H 336"></path>
+            <path class="reflection-feedback" d="M 336 100 C 336 150, 184 150, 184 100"></path>
+          </g>
+          <g class="react-node-svg">
+            <rect x="64" y="54" width="120" height="44" rx="22"></rect>
+            <text x="124" y="80">actor</text>
+          </g>
+          <g class="react-node-svg is-critic">
+            <rect x="336" y="54" width="120" height="44" rx="22"></rect>
+            <text x="396" y="80">critic</text>
+          </g>
+          <text class="loop-caption reflection-label" x="260" y="68">draft</text>
+          <text class="loop-caption reflection-label-back" x="260" y="172">feedback (until approved)</text>
+        </svg>
+      </div>
+      <ul class="pattern-card__bullets">
+        <li><strong>Strength:</strong> catches mistakes the actor wouldn't notice on its own; raises floor on output quality.</li>
+        <li><strong>Failure mode:</strong> echo chamber — same model critiquing itself misses systemic blind spots and over-approves.</li>
+        <li><strong>Fits:</strong> code generation, written content, anything with a clear quality rubric.</li>
+      </ul>
+    </article>
+
+    <!-- Pattern 04 — Multi-agent -------------------------------------- -->
+    <article class="pattern-card">
+      <header class="pattern-card__head">
+        <span class="pattern-card__kicker">Pattern 04</span>
+        <h2>Multi-agent — Specialists coordinated by a dispatcher.</h2>
+        <p>
+          Several agents with distinct tools, prompts, or knowledge, plus
+          a coordinator that routes work and merges results. The strong
+          version is task-shaped: each specialist owns a real
+          sub-domain. The weak version is one agent in a trench coat
+          where the "specialists" share everything except the prompt.
+        </p>
+      </header>
+      <div class="mini-diagram multi-diagram" aria-label="Multi-agent diagram">
+        <svg viewBox="0 0 520 220" role="img" aria-labelledby="multi-title">
+          <title id="multi-title">Multi-agent: coordinator routes to three specialist agents and merges their results</title>
+          <defs>
+            <marker id="multi-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+          <g class="multi-links">
+            <path d="M 260 90 L 108 156"></path>
+            <path d="M 260 90 L 260 156"></path>
+            <path d="M 260 90 L 412 156"></path>
+            <path class="multi-link-back" d="M 108 184 L 244 110"></path>
+            <path class="multi-link-back" d="M 260 184 L 260 114"></path>
+            <path class="multi-link-back" d="M 412 184 L 276 110"></path>
+          </g>
+          <g class="react-node-svg is-coordinator">
+            <rect x="200" y="44" width="120" height="44" rx="22"></rect>
+            <text x="260" y="70">coordinator</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="40" y="156" width="136" height="44" rx="22"></rect>
+            <text x="108" y="182">researcher</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="200" y="156" width="120" height="44" rx="22"></rect>
+            <text x="260" y="182">analyst</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="344" y="156" width="136" height="44" rx="22"></rect>
+            <text x="412" y="182">writer</text>
+          </g>
+        </svg>
+      </div>
+      <ul class="pattern-card__bullets">
+        <li><strong>Strength:</strong> each specialist's context stays clean; one agent doesn't carry the burden of all tools.</li>
+        <li><strong>Failure mode:</strong> coordinator becomes the bottleneck; agents talk past each other; cost explodes.</li>
+        <li><strong>Fits:</strong> workflows with genuinely distinct expert roles (retrieval vs. analysis vs. composition).</li>
+      </ul>
+
+      <div class="wiring-section">
+        <div class="wiring-section__head">
+          <span class="pattern-card__kicker">Two wirings</span>
+          <h3>Subagent vs agent-as-tool.</h3>
+          <p>
+            Same picture above, two very different runtime shapes. The
+            choice changes who blocks, where context lives, and how the
+            trace reads.
+          </p>
         </div>
-        <div class="mini-diagram graph-diagram" aria-label="Graph state machine diagram">
-          <svg viewBox="0 0 520 176" role="img" aria-labelledby="graph-title">
-            <title id="graph-title">Graph state machine: start, route, tool, check, recover, and done</title>
-            <defs>
-              <marker id="graph-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
-                <path d="M0,0 L8,4 L0,8 Z"></path>
-              </marker>
-            </defs>
-            <g class="graph-links">
-              <path d="M 88 56 H 148"></path>
-              <path d="M 260 56 H 308"></path>
-              <path d="M 388 56 H 432"></path>
-              <path d="M 348 78 V 116"></path>
-              <path d="M 308 138 H 260"></path>
-              <path d="M 148 138 H 88 V 78"></path>
-            </g>
-            <g class="graph-node-svg">
-              <rect x="24" y="34" width="64" height="44" rx="22"></rect>
-              <text x="56" y="60">start</text>
-            </g>
-            <g class="graph-node-svg">
-              <rect x="148" y="34" width="112" height="44" rx="22"></rect>
-              <text x="204" y="60">route</text>
-            </g>
-            <g class="graph-node-svg">
-              <rect x="308" y="34" width="80" height="44" rx="22"></rect>
-              <text x="348" y="60">tool</text>
-            </g>
-            <g class="graph-node-svg is-done">
-              <rect x="432" y="34" width="64" height="44" rx="22"></rect>
-              <text x="464" y="60">done</text>
-            </g>
-            <g class="graph-node-svg is-recover">
-              <rect x="148" y="116" width="112" height="44" rx="22"></rect>
-              <text x="204" y="142">recover</text>
-            </g>
-            <g class="graph-node-svg">
-              <rect x="308" y="116" width="80" height="44" rx="22"></rect>
-              <text x="348" y="142">check</text>
-            </g>
-          </svg>
+        <div class="wiring-grid">
+          <article class="wiring-card">
+            <div class="wiring-card__diagram" aria-label="Subagent wiring diagram">
+              <svg viewBox="0 0 220 140" role="img" aria-labelledby="subagent-title">
+                <title id="subagent-title">Subagent wiring: parent spawns a subagent, blocks, receives the result, and resumes</title>
+                <defs>
+                  <marker id="wiring-sub-arrow" markerHeight="7" markerWidth="7" orient="auto" refX="6" refY="3.5">
+                    <path d="M0,0 L7,3.5 L0,7 Z"></path>
+                  </marker>
+                </defs>
+                <g class="wiring-links">
+                  <path class="wiring-link-fork" d="M 84 36 V 90"></path>
+                  <path class="wiring-link-return" d="M 136 90 V 36"></path>
+                </g>
+                <g class="react-node-svg is-coordinator">
+                  <rect x="48" y="12" width="124" height="32" rx="16"></rect>
+                  <text x="110" y="28">parent</text>
+                </g>
+                <g class="react-node-svg">
+                  <rect x="48" y="92" width="124" height="32" rx="16"></rect>
+                  <text x="110" y="108">subagent</text>
+                </g>
+                <text class="wiring-label wiring-label--left" x="80" y="68">spawn</text>
+                <text class="wiring-label wiring-label--right" x="140" y="68">return</text>
+              </svg>
+            </div>
+            <div class="wiring-card__body">
+              <span class="wiring-card__kind">Spawned · blocking</span>
+              <h4>Subagent</h4>
+              <p>
+                Parent calls <code>spawn_agent(role, task)</code> and
+                pauses. The subagent runs in its own context with its own
+                tools and model, completes the task, and returns a result.
+                Parent resumes from where it stopped.
+              </p>
+              <ul class="wiring-card__bullets">
+                <li><strong>Fits:</strong> long-running specialists, isolated context budgets, tasks that genuinely need a fresh slate.</li>
+                <li><strong>Risk:</strong> parent is blocked; harder to stream progress; eval boundaries cross process lines.</li>
+                <li><strong>Used by:</strong> Claude Code's Task tool, ADK's <code>transfer_to_agent</code>.</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="wiring-card">
+            <div class="wiring-card__diagram" aria-label="Agent-as-tool wiring diagram">
+              <svg viewBox="0 0 220 140" role="img" aria-labelledby="aat-title">
+                <title id="aat-title">Agent-as-tool wiring: coordinator calls the specialist like a function and receives its return value in the same turn</title>
+                <defs>
+                  <marker id="wiring-aat-arrow" markerHeight="7" markerWidth="7" orient="auto" refX="6" refY="3.5">
+                    <path d="M0,0 L7,3.5 L0,7 Z"></path>
+                  </marker>
+                </defs>
+                <g class="wiring-links">
+                  <path class="wiring-link-call" d="M 152 44 C 198 52, 198 104, 152 112"></path>
+                </g>
+                <g class="react-node-svg is-coordinator">
+                  <rect x="20" y="20" width="132" height="32" rx="16"></rect>
+                  <text x="86" y="36">coordinator</text>
+                </g>
+                <g class="react-node-svg">
+                  <rect x="20" y="96" width="132" height="32" rx="16"></rect>
+                  <text x="86" y="112">specialist</text>
+                </g>
+                <text class="wiring-label wiring-label--side" x="178" y="78">call</text>
+              </svg>
+            </div>
+            <div class="wiring-card__body">
+              <span class="wiring-card__kind">Registered · non-blocking</span>
+              <h4>Agent-as-tool</h4>
+              <p>
+                The specialist is registered as a tool on the coordinator.
+                The coordinator calls <code>researcher(query)</code> like
+                any function tool, the specialist runs, returns its
+                output, and the coordinator continues in the same turn.
+              </p>
+              <ul class="wiring-card__bullets">
+                <li><strong>Fits:</strong> shorter specialist tasks, function-tool mental model, single-trace observability.</li>
+                <li><strong>Risk:</strong> coordinator's context grows with every specialist call; specialists can't be too chatty.</li>
+                <li><strong>Used by:</strong> LangGraph supervisor pattern, ADK <code>AgentTool</code>.</li>
+              </ul>
+            </div>
+          </article>
         </div>
-        <ul>
-          <li>Explicit workflow structure for production flows.</li>
-          <li>System decides valid transitions; model fills nodes.</li>
-          <li>Easier to test, resume, inspect, and recover.</li>
-        </ul>
-      </article>
-    </div>
+      </div>
+    </article>
+
+    <!-- Pattern 05 — Graph / state machine ---------------------------- -->
+    <article class="pattern-card">
+      <header class="pattern-card__head">
+        <span class="pattern-card__kicker">Pattern 05</span>
+        <h2>Graph / state machine — Nodes and edges, not a free-form loop.</h2>
+        <p>
+          The agent runs inside an explicit graph: each node is a step
+          with a typed input and output, edges encode the valid
+          transitions, and the runtime — not the model — decides what
+          fires next. Any of the four patterns above can live <em>inside</em>
+          a node; the graph is the chassis that holds them.
+        </p>
+      </header>
+      <div class="mini-diagram graph-diagram" aria-label="Graph state machine">
+        <svg viewBox="0 0 520 200" role="img" aria-labelledby="graph-title">
+          <title id="graph-title">Graph state machine: start, route, tool, check, recover, done</title>
+          <defs>
+            <marker id="graph-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+          <g class="graph-links">
+            <path d="M 88 56 H 148"></path>
+            <path d="M 260 56 H 308"></path>
+            <path d="M 388 56 H 432"></path>
+            <path d="M 348 78 V 116"></path>
+            <path d="M 308 138 H 260"></path>
+            <path d="M 148 138 H 88 V 78"></path>
+          </g>
+          <g class="graph-node-svg">
+            <rect x="24" y="34" width="64" height="44" rx="22"></rect>
+            <text x="56" y="60">start</text>
+          </g>
+          <g class="graph-node-svg">
+            <rect x="148" y="34" width="112" height="44" rx="22"></rect>
+            <text x="204" y="60">route</text>
+          </g>
+          <g class="graph-node-svg">
+            <rect x="308" y="34" width="80" height="44" rx="22"></rect>
+            <text x="348" y="60">tool</text>
+          </g>
+          <g class="graph-node-svg is-done">
+            <rect x="432" y="34" width="64" height="44" rx="22"></rect>
+            <text x="464" y="60">done</text>
+          </g>
+          <g class="graph-node-svg is-recover">
+            <rect x="148" y="116" width="112" height="44" rx="22"></rect>
+            <text x="204" y="142">recover</text>
+          </g>
+          <g class="graph-node-svg">
+            <rect x="308" y="116" width="80" height="44" rx="22"></rect>
+            <text x="348" y="142">check</text>
+          </g>
+          <text class="loop-caption" x="260" y="184">runtime decides the next node; transitions encoded in code</text>
+        </svg>
+      </div>
+      <ul class="pattern-card__bullets">
+        <li><strong>Strength:</strong> valid transitions live in code, not the prompt — easier to test, resume from a checkpoint, and recover.</li>
+        <li><strong>Failure mode:</strong> over-fitting the graph to today's flow; every new branch becomes a code change, not a prompt tweak.</li>
+        <li><strong>Fits:</strong> production workflows with regulatory paths, retries, HITL gates, or any constraint that must hold every run.</li>
+      </ul>
+    </article>
+
+    <!-- Pattern 06 — CodeAct ------------------------------------------ -->
+    <article class="pattern-card">
+      <header class="pattern-card__head">
+        <span class="pattern-card__kicker">Pattern 06</span>
+        <h2>CodeAct — The action <em>is</em> code, not a JSON tool call.</h2>
+        <p>
+          A different axis from the patterns above. The other five chose
+          <em>when</em> steps fire; CodeAct chooses <em>what shape an
+          action takes</em>. Instead of emitting one JSON tool call per
+          turn, the model emits an executable code block that may call
+          several tools, invoke a skill, branch on a result, and return a
+          single composite observation. Several roundtrips collapse into
+          one.
+        </p>
+      </header>
+      <div class="mini-diagram codeact-diagram" aria-label="CodeAct action shape diagram">
+        <svg viewBox="0 0 520 220" role="img" aria-labelledby="codeact-title">
+          <title id="codeact-title">CodeAct: model emits a code block that calls multiple tools and a skill in one turn, returning a composite observation</title>
+          <defs>
+            <marker id="codeact-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+              <path d="M0,0 L8,4 L0,8 Z"></path>
+            </marker>
+          </defs>
+          <g class="codeact-links">
+            <path d="M 132 56 H 196"></path>
+            <path d="M 332 78 V 124"></path>
+            <path d="M 332 124 H 132 V 156"></path>
+            <path d="M 332 124 V 156"></path>
+            <path d="M 332 124 H 532 V 156" transform="translate(-200 0)"></path>
+            <path class="codeact-link-back" d="M 132 178 C 60 178, 60 56, 76 56"></path>
+          </g>
+          <g class="react-node-svg is-planner">
+            <rect x="20" y="34" width="112" height="44" rx="22"></rect>
+            <text x="76" y="60">model</text>
+          </g>
+          <g class="codeact-block">
+            <rect x="196" y="34" width="272" height="44" rx="10"></rect>
+            <text x="332" y="60">code block (single turn)</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="60" y="156" width="144" height="44" rx="10"></rect>
+            <text x="132" y="182">tool · search</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="260" y="156" width="144" height="44" rx="10"></rect>
+            <text x="332" y="182">tool · download</text>
+          </g>
+          <g class="react-node-svg">
+            <rect x="460" y="156" width="60" height="44" rx="10"></rect>
+            <text x="490" y="182">skill</text>
+          </g>
+          <text class="loop-caption codeact-label-back" x="42" y="118">observation</text>
+        </svg>
+      </div>
+      <ul class="pattern-card__bullets">
+        <li><strong>Strength:</strong> composes — code can loop, branch, transform results, and chain tools without a roundtrip per call.</li>
+        <li><strong>Failure mode:</strong> needs a sandbox; bad code can crash the executor, leak secrets, or run forever without resource limits.</li>
+        <li><strong>Fits:</strong> data analysis, ML workflows, anything where the action benefits from variables, loops, and composition.</li>
+      </ul>
+      <p class="pattern-card__footer">
+        Defended properly, with the trade-off named, in
+        <a href={url('/codeact/')}>chapter 06 · CodeAct deep dive <span aria-hidden="true">→</span></a>.
+      </p>
+    </article>
 
     <div class="when-panel">
-      <h3>Use which when?</h3>
+      <h3>Picking among them.</h3>
       <div>
         <article>
-          <span>Use ReAct when</span>
-          <strong>the task is ambiguous, exploratory, or tool choice is unknown upfront.</strong>
+          <span>Reach for ReAct or reflection when</span>
+          <strong>the task is exploratory, the rubric is qualitative, or the next step depends on what was just learned.</strong>
           <ul class="use-cases">
             <li>Research assistant that searches, reads, and synthesizes unfamiliar topics.</li>
-            <li>Debugging assistant exploring logs, code, tests, and docs to find root cause.</li>
-            <li>Travel planner that compares options, checks constraints, and revises an itinerary.</li>
+            <li>Debugging assistant exploring logs, code, tests, and docs.</li>
+            <li>Code generation with a critic checking against tests.</li>
           </ul>
         </article>
         <article>
-          <span>Use graphs when</span>
-          <strong>the workflow has known states, constraints, retries, or handoffs.</strong>
+          <span>Reach for planner-executor or multi-agent when</span>
+          <strong>the work decomposes cleanly, subtasks are independent, or genuinely distinct expert roles exist.</strong>
           <ul class="use-cases">
-            <li>Customer support triage with escalation, refund, and compliance paths.</li>
-            <li>Code review pipeline with lint, test, patch, approval, and rollback states.</li>
-            <li>Manufacturing diagnostics that step through alarms, sensor checks, and escalation paths.</li>
+            <li>Multi-document analysis where each document is independent.</li>
+            <li>Pipelines with retrieval, analysis, and composition as distinct stages.</li>
+            <li>Customer support triage with specialist agents per case type.</li>
+          </ul>
+        </article>
+        <article>
+          <span>Reach for a graph when</span>
+          <strong>the workflow has must-hold invariants, regulated paths, retries, or HITL gates that need to be enforced by the runtime, not the model.</strong>
+          <ul class="use-cases">
+            <li>Loan-approval or claims pipelines where steps must run in a fixed order.</li>
+            <li>Long-running workflows that resume hours later from a checkpoint.</li>
+            <li>Any of the patterns above, once you need explicit recovery branches.</li>
+          </ul>
+        </article>
+        <article>
+          <span>Reach for CodeAct when</span>
+          <strong>the action benefits from composition — chaining tools, transforming results, looping over collections — and you can afford a sandboxed executor.</strong>
+          <ul class="use-cases">
+            <li>Data and ML workflows where a single block fetches, cleans, fits, and reports.</li>
+            <li>Tasks where the next call depends on the shape of the previous result.</li>
+            <li>Any of the patterns above, once JSON roundtrips become the bottleneck.</li>
           </ul>
         </article>
       </div>

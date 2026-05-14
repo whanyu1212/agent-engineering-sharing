@@ -75,5 +75,35 @@ root_agent = Agent(
       </figcaption>
       <Code code={skillToolsetCode} lang="python" theme="github-light" />
     </figure>
+
+    <div class="section-head compact-head" style="margin-top: 36px;">
+      <p class="eyebrow">Further reading</p>
+      <h2>Official skills documentation.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <article class="refs-block">
+        <span>Concept</span>
+        <h3>Anthropic Agent Skills</h3>
+        <p>
+          The packaged-know-how pattern in its original form: instructions,
+          scripts, templates, and metadata that Claude can discover and
+          invoke. Useful for understanding the shape and intent before
+          looking at any one framework's implementation.
+        </p>
+        <a href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview" target="_blank" rel="noreferrer">docs.claude.com/agent-skills <span aria-hidden="true">↗</span></a>
+      </article>
+      <article class="refs-block">
+        <span>Implementation</span>
+        <h3>Google ADK Skills</h3>
+        <p>
+          ADK's take: <code>load_skill_from_dir</code> plus
+          <code>SkillToolset</code>, with the skill packaged as a directory
+          on disk and exposed to the agent through the standard tools
+          interface. This is what the code sample above uses.
+        </p>
+        <a href="https://adk.dev/skills/" target="_blank" rel="noreferrer">adk.dev/skills <span aria-hidden="true">↗</span></a>
+      </article>
+    </div>
   </section>
 </SiteLayout>

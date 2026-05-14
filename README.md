@@ -19,6 +19,7 @@ Pages live in `src/pages/`:
 
 - `index.astro`
 - `what-is-agent.astro`
+- `session-state-memory.astro`
 - `orchestration.astro`
 - `engineering-practice.astro`
 - `function-tools.astro`

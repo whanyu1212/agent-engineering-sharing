@@ -7,98 +7,13 @@ import { url } from '../lib/url';
   <section class="landing-hero">
     <h1>Opinionated notes on building agents that actually ship.</h1>
     <p class="landing-lede">
-      A working set of ideas on what makes agents survive contact with
-      production — the runtime that wraps them, the shape of actions they
-      emit, and the evidence that proves they did the right thing. Built
-      around Google ADK and the CodeAct paradigm.
+      A set of opinionated notes for an internal sharing on agent
+      engineering: what agents are, how they use tools, how to test them,
+      and where Google ADK and CodeAct fit.
     </p>
     <div class="landing-anchors">
       <a href={url('/what-is-agent/')}>Start with the agent loop <span aria-hidden="true">→</span></a>
       <a href={url('/harness-engineering/')}>Skip to the harness <span aria-hidden="true">→</span></a>
-    </div>
-  </section>
-
-  <section class="landing-section">
-    <div class="section-head compact-head">
-      <p class="eyebrow">Two ideas</p>
-      <h2>What this site leans on.</h2>
-    </div>
-
-    <div class="thesis-grid">
-      <article class="thesis-card">
-        <span class="thesis-card__kicker">Idea 01</span>
-        <h3>The harness is the real engineering surface.</h3>
-        <ul>
-          <li>Tracing tells you what happened. The harness is what makes sure it can happen the same way twice.</li>
-          <li>Confirmations, eval files, event logs, HITL pauses — all live in the harness layer, not the prompt.</li>
-          <li>Models keep getting better. Harnesses are what differentiate good agent systems from fragile ones.</li>
-        </ul>
-        <a class="thesis-card__link" href={url('/harness-engineering/')}>Read the harness chapter <span aria-hidden="true">→</span></a>
-      </article>
-
-      <article class="thesis-card">
-        <span class="thesis-card__kicker">Idea 02</span>
-        <h3>JSON tool calls don't scale. Code does.</h3>
-        <ul>
-          <li>CodeAct (Wang et al., ICML 2024) shows executable code actions outperform JSON tool calls by up to 20% in success rate, with ~30% fewer steps.</li>
-          <li>Code composes. JSON tool schemas don't — every new combination is a new prompt-engineering problem.</li>
-          <li>Microsoft Agent Framework adopted CodeAct in early 2026. Google ADK ships a code executor. The direction is clear.</li>
-        </ul>
-        <a class="thesis-card__link" href={url('/codeact/')}>Read the CodeAct chapter <span aria-hidden="true">→</span></a>
-      </article>
-    </div>
-  </section>
-
-  <section class="landing-section">
-    <div class="section-head compact-head">
-      <p class="eyebrow">Smaller calls</p>
-      <h2>A few related views that show up in the chapters.</h2>
-    </div>
-
-    <div class="opinion-grid">
-      <article class="opinion-card">
-        <span>On orchestration</span>
-        <h3>Graphs beat ReAct loops for production workflows.</h3>
-        <p>Production agents need explicit state machines, not free-form reasoning over an open tool set.</p>
-      </article>
-      <article class="opinion-card">
-        <span>On evaluation</span>
-        <h3>Eval files should assert on tool trajectories, not just final answers.</h3>
-        <p>If you only test the output, you can't catch the agent that fluked it by skipping the right tool.</p>
-      </article>
-      <article class="opinion-card">
-        <span>On human gates</span>
-        <h3>Human-in-the-loop is a runtime primitive, not a UI pattern.</h3>
-        <p>ADK 2.0's <code>RequestInput</code> makes pauses first-class workflow nodes — pauses can last hours.</p>
-      </article>
-    </div>
-  </section>
-
-  <section class="landing-section">
-    <div class="section-head compact-head">
-      <p class="eyebrow">Grounded in</p>
-      <h2>What this site references.</h2>
-    </div>
-
-    <div class="refs-grid">
-      <article class="refs-block">
-        <span>Framework</span>
-        <h3>Google ADK</h3>
-        <p>Runner, SessionService, events, confirmations, evals, and the ADK 2.0 beta HITL workflow primitives.</p>
-        <a href="https://adk.dev/" target="_blank" rel="noreferrer">adk.dev <span aria-hidden="true">↗</span></a>
-      </article>
-      <article class="refs-block">
-        <span>Paper</span>
-        <h3>CodeAct (ICML 2024)</h3>
-        <p>Wang, Chen, Yuan et al. — "Executable Code Actions Elicit Better LLM Agents." The empirical case for code over JSON.</p>
-        <a href="https://arxiv.org/abs/2402.01030" target="_blank" rel="noreferrer">arxiv.org/abs/2402.01030 <span aria-hidden="true">↗</span></a>
-      </article>
-      <article class="refs-block">
-        <span>Observability</span>
-        <h3>OpenTelemetry-aligned tooling</h3>
-        <p>Langfuse, Opik, and Arize Phoenix — each shown in the eval chapter as a different way teams close the feedback loop.</p>
-        <a href={url('/eval-observability/')}>See the eval chapter <span aria-hidden="true">→</span></a>
-      </article>
     </div>
   </section>
 
@@ -110,7 +25,8 @@ import { url } from '../lib/url';
 
     <ol class="toc-list">
       <li><a href={url('/what-is-agent/')}><span>01</span><strong>What is an agent?</strong><em>Models in a control loop: state, tools, observations, and stopping criteria.</em></a></li>
-      <li><a href={url('/orchestration/')}><span>02</span><strong>ReAct vs graph</strong><em>Flexible model-led loops against explicit workflow graphs.</em></a></li>
+      <li><a href={url('/session-state-memory/')}><span>01A</span><strong>Session, state, memory</strong><em>The current thread, the live scratchpad, and long-term searchable context.</em></a></li>
+      <li><a href={url('/orchestration/')}><span>02</span><strong>Design patterns</strong><em>ReAct, planner-executor, reflection, multi-agent, graph, CodeAct — the six shapes an agent runs in.</em></a></li>
       <li><a href={url('/engineering-practice/')}><span>03</span><strong>Tools &amp; capability</strong><em>Function tools, MCP, skills, code execution, retrieval, and human handoff.</em></a></li>
       <li><a href={url('/function-tools/')}><span>03A</span><strong>Function tools</strong><em>The narrowest useful tool form.</em></a></li>
       <li><a href={url('/skills/')}><span>03B</span><strong>Skills</strong><em>Packaged repeatable know-how.</em></a></li>
@@ -118,7 +34,7 @@ import { url } from '../lib/url';
       <li><a href={url('/eval-observability/')}><span>04</span><strong>Eval &amp; observability</strong><em>Traces explain what happened. Evals tell whether it was good enough.</em></a></li>
       <li><a href={url('/harness-engineering/')}><span>05</span><strong>Harness concept</strong><em>The runtime boundary around state, tools, permissions, replay, and tests.</em></a></li>
       <li><a href={url('/harness-examples/')}><span>05A</span><strong>ADK harness examples</strong><em>Runner, confirmations, HITL, evals, events — the harness made concrete.</em></a></li>
-      <li><a href={url('/codeact/')}><span>06</span><strong>CodeAct</strong><em>The action shape that scales. Defended properly, with the trade-off named.</em></a></li>
+      <li><a href={url('/codeact/')}><span>06</span><strong>CodeAct Deep Dive</strong><em>The action shape that scales. Defended properly, with the trade-off named.</em></a></li>
       <li><a href={url('/codeact-ds-agent/')}><span>06A</span><strong>A specialized ML agent</strong><em>End-to-end Kaggle workflow: function tool for the CLI, skill for the modeling sweep, CodeAct in between.</em></a></li>
     </ol>
   </section>

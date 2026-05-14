@@ -2,291 +2,309 @@
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
 
-// Stage 1 — Function tool: pull dataset via kaggle-cli
-const kaggleToolCode = `# The function tool — a thin Python wrapper around the kaggle CLI.
-import subprocess
-from pathlib import Path
+// Phase 01 — Fetch the dataset
+// ReAct side: three JSON tool-call turns, each wrapping a CLI op.
+const fetchReactTrace = `# Three turns. Three tools. Three round-trips with the model.
 
-def kaggle_download(dataset: str, dest: str = "data/") -> dict:
-    """Download a Kaggle dataset to a local path. Returns the file index."""
-    Path(dest).mkdir(parents=True, exist_ok=True)
-    subprocess.run(
-        ["kaggle", "datasets", "download",
-         "-d", dataset, "-p", dest, "--unzip"],
-        check=True, timeout=120,
-    )
-    files = sorted(p.name for p in Path(dest).iterdir())
-    return {"dataset": dataset, "dest": dest, "files": files}
+# Turn 1 — search for the dataset.
+{"function_call": {
+    "name": "kaggle_search",
+    "args": {"query": "telco customer churn"}
+}}
+{"function_response": {
+    "name": "kaggle_search",
+    "response": {"results": [
+        {"slug": "blastchar/telco-customer-churn",
+         "title": "Telco Customer Churn",
+         "size_mb": 0.17, "downloads": 482103}
+    ]}
+}}
 
-# The agent emits a function_call against it.
-# Wire shape (truncated):
+# Turn 2 — download it.
 {"function_call": {
     "name": "kaggle_download",
-    "args": {"dataset": "blastchar/telco-customer-churn"}
+    "args": {"dataset": "blastchar/telco-customer-churn",
+             "dest": "data/"}
 }}
 {"function_response": {
     "name": "kaggle_download",
-    "response": {
-        "dataset": "blastchar/telco-customer-churn",
-        "dest": "data/",
-        "files": ["WA_Fn-UseC_-Telco-Customer-Churn.csv"]
-    }
+    "response": {"dest": "data/",
+                 "files": ["WA_Fn-UseC_-Telco-Customer-Churn.csv"]}
+}}
+
+# Turn 3 — list files so the model knows what landed.
+{"function_call": {
+    "name": "list_files",
+    "args": {"path": "data/"}
+}}
+{"function_response": {
+    "name": "list_files",
+    "response": {"files": [
+        {"name": "WA_Fn-UseC_-Telco-Customer-Churn.csv",
+         "size_kb": 977}
+    ]}
 }}`;
 
-// Stage 2 — CodeAct: inspect and understand
-const inspectCode = `import pandas as pd
+// CodeAct side: one Python block calls the same function tools inline.
+const fetchCodeActScript = `# One turn. The function tools are still typed and bounded —
+# the agent just calls them as ordinary Python.
 
+results = kaggle_search(query="telco customer churn")
+slug = results[0]["slug"]
+kaggle_download(dataset=slug, dest="data/")
+
+import pandas as pd
 df = pd.read_csv("data/WA_Fn-UseC_-Telco-Customer-Churn.csv")
-print(df.shape, df["Churn"].value_counts(normalize=True).round(3).to_dict())
-# (7043, 21) {'No': 0.735, 'Yes': 0.265}
+print(df.shape, "->", df["Churn"].value_counts(normalize=True).round(3).to_dict())
+# (7043, 21) -> {'No': 0.735, 'Yes': 0.265}`;
 
-# Schema scan — types and missingness in one pass.
-print(df.dtypes.value_counts().to_dict())
-print(df.isna().sum().sum(), "missing cells")
-# {object: 17, int64: 2, float64: 1, ...}
-# 0 missing cells
+// Phase 02 — Clean the data
+// ReAct: many turns, one tool per atomic op. Looks painful by design.
+const cleanReactTrace = `# Eight+ turns. Every micro-op is a tool the developer had to ship.
 
-# TotalCharges is typed object — likely whitespace strings. Check it.
-print(df["TotalCharges"].apply(type).value_counts().to_dict())
-# {<class 'str'>: 7043}
-print((df["TotalCharges"].str.strip() == "").sum(), "blank TotalCharges")
-# 11 blank TotalCharges`;
+{"function_call": {"name": "read_csv",
+    "args": {"path": "data/WA_Fn-UseC_-Telco-Customer-Churn.csv"}}}
+{"function_response": {"name": "read_csv",
+    "response": {"ref": "df://t-01", "rows": 7043, "cols": 21}}}
 
-// Stage 3 — CodeAct: preprocess
-const preprocessCode = `from sklearn.model_selection import train_test_split
+{"function_call": {"name": "describe_schema",
+    "args": {"ref": "df://t-01"}}}
+{"function_response": {"name": "describe_schema",
+    "response": {"object_cols": 17, "numeric_cols": 3,
+                 "suspect": [{"col": "TotalCharges", "dtype": "object"}]}}}
+
+{"function_call": {"name": "coerce_numeric",
+    "args": {"ref": "df://t-01", "col": "TotalCharges",
+             "errors": "coerce"}}}
+{"function_response": {"name": "coerce_numeric",
+    "response": {"ref": "df://t-02", "nan_introduced": 11}}}
+
+{"function_call": {"name": "impute_median",
+    "args": {"ref": "df://t-02", "col": "TotalCharges"}}}
+{"function_response": {"name": "impute_median",
+    "response": {"ref": "df://t-03", "imputed_value": 1397.475}}}
+
+# ... 6 more turns: label_encode for each of 16 categoricals,
+#     then drop_columns, then stratified_split. Each its own tool.
+
+{"function_call": {"name": "stratified_split",
+    "args": {"ref": "df://t-19", "target": "Churn",
+             "test_size": 0.2, "random_state": 42}}}
+{"function_response": {"name": "stratified_split",
+    "response": {"train": "df://train", "test": "df://test"}}}`;
+
+// CodeAct: the whole cleanup in one block, ordinary pandas/sklearn.
+const cleanCodeActScript = `# One turn. Pandas and sklearn already know how to do this.
+
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
-# Fix the TotalCharges parse — 11 blanks become NaN, then median impute.
+# Fix the broken numeric column — 11 blanks become NaN, median impute.
 df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
 df["TotalCharges"] = df["TotalCharges"].fillna(df["TotalCharges"].median())
 
-# Encode the target and the 16 categorical predictors.
+# Encode the target and 16 categorical predictors.
 y = (df["Churn"] == "Yes").astype(int)
 X = df.drop(columns=["customerID", "Churn"])
-
-cat_cols = X.select_dtypes(include="object").columns
-for col in cat_cols:
+for col in X.select_dtypes(include="object").columns:
     X[col] = LabelEncoder().fit_transform(X[col].astype(str))
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=42
+    X, y, test_size=0.2, stratify=y, random_state=42,
 )
 print(X_train.shape, X_test.shape, "churn rate", y_train.mean().round(3))
 # (5634, 19) (1409, 19) churn rate 0.265`;
 
-// Stage 4 — Skill: ML baseline workflow
-const skillCode = `from google.adk import Agent
-from google.adk.skills import load_skill_from_dir
-from google.adk.tools import skill_toolset
+// Phase 03 — Fit the model
+// ReAct: a tool per estimator, a tool per comparison op, a tool to fit.
+const fitReactTrace = `# Six+ turns. One tool per estimator, one per evaluation step.
 
-# The skill bundles the procedure: try LogReg, RandomForest, XGBoost;
-# report a fixed-shape comparison table; emit the trained estimators.
-ml_baseline = load_skill_from_dir("skills/ml-baseline")
+{"function_call": {"name": "train_logreg",
+    "args": {"X": "df://train", "y": "y://train"}}}
+{"function_response": {"name": "train_logreg",
+    "response": {"model": "m://lr-01", "fit_secs": 0.4}}}
 
-baseline_tools = skill_toolset.SkillToolset(
-    skills=[ml_baseline],
-    additional_tools=[kaggle_download],
-)
+{"function_call": {"name": "train_random_forest",
+    "args": {"X": "df://train", "y": "y://train",
+             "n_estimators": 200}}}
+{"function_response": {"name": "train_random_forest",
+    "response": {"model": "m://rf-01", "fit_secs": 2.1}}}
 
-agent = Agent(
-    model="gemini-2.5-flash",
-    name="ml_assistant",
-    instruction=(
-        "Use kaggle_download for data acquisition. "
-        "Use the ml-baseline skill for the modeling sweep. "
-        "Write code directly for everything in between."
-    ),
-    code_executor=AgentEngineSandboxCodeExecutor(...),
-    tools=[baseline_tools],
-)
+{"function_call": {"name": "train_xgboost",
+    "args": {"X": "df://train", "y": "y://train",
+             "n_estimators": 200, "max_depth": 4}}}
+{"function_response": {"name": "train_xgboost",
+    "response": {"model": "m://xgb-01", "fit_secs": 1.3}}}
 
-# When the agent invokes the skill, the output is the comparison table
-# the skill is designed to produce. Stable shape, repeatable across runs.
-# +---------------------+-----------+--------+----------+----------+
-# | model               | accuracy  | f1     | roc_auc  | fit_secs |
-# +---------------------+-----------+--------+----------+----------+
-# | LogisticRegression  | 0.798     | 0.586  | 0.843    | 0.4      |
-# | RandomForest        | 0.791     | 0.566  | 0.821    | 2.1      |
-# | XGBoost             | 0.804     | 0.601  | 0.847    | 1.3      |
-# +---------------------+-----------+--------+----------+----------+`;
+# ... 3 more turns: score_models, select_best, predict_on_test.
 
-// Stage 5 — CodeAct: pick a winner, fit, save
-const finalizeCode = `import joblib
-from sklearn.metrics import classification_report, confusion_matrix
+{"function_call": {"name": "score_models",
+    "args": {"models": ["m://lr-01", "m://rf-01", "m://xgb-01"],
+             "X_test": "df://test", "y_test": "y://test"}}}
+{"function_response": {"name": "score_models",
+    "response": {"best": "m://xgb-01", "roc_auc": 0.847}}}`;
+
+// CodeAct: invoke the ml-baseline skill, pick the winner, finalize.
+const fitCodeActScript = `# One turn. The skill packages the sweep; code picks the winner.
+
+# The ml-baseline skill bundles the procedure: try LogReg, RandomForest,
+# XGBoost; report a fixed-shape comparison table; return the estimators.
+report = ml_baseline.run(X_train, y_train)
+print(report.to_string())
+# model               accuracy  f1     roc_auc  fit_secs
+# LogisticRegression  0.798     0.586  0.843    0.4
+# RandomForest        0.791     0.566  0.821    2.1
+# XGBoost             0.804     0.601  0.847    1.3
+
+# XGBoost wins on F1 and ROC-AUC. Fit on full training data and evaluate.
 from xgboost import XGBClassifier
-
-# XGBoost wins on F1 and ROC-AUC. Fit on full training data.
-model = XGBClassifier(
-    n_estimators=200, learning_rate=0.05,
-    max_depth=4, random_state=42, eval_metric="logloss",
-)
+model = XGBClassifier(n_estimators=200, learning_rate=0.05,
+                     max_depth=4, random_state=42, eval_metric="logloss")
 model.fit(X_train, y_train)
 
-# Evaluate against the holdout.
-y_pred = model.predict(X_test)
-print(classification_report(y_test, y_pred, target_names=["stay", "churn"]))
-#               precision  recall  f1-score  support
-#         stay      0.836   0.892     0.863     1035
-#        churn      0.660   0.553     0.602      374
+from sklearn.metrics import classification_report
+print(classification_report(model.predict(X_test), y_test,
+                            target_names=["stay", "churn"]))
+#               precision  recall  f1
+#         stay      0.836   0.892   0.863
+#        churn      0.660   0.553   0.602
 
-print(confusion_matrix(y_test, y_pred))
-# [[923 112]
-#  [167 207]]
-
-joblib.dump(model, "artifacts/churn_xgb_v1.joblib")
-# Saved 1.2MB model artifact. Ready for handoff or deployment.`;
+import joblib
+joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
 ---
 
 <SiteLayout current="codeact-ds-agent" title="A specialized ML coding agent">
   <section class="section page-section">
     <div class="section-head">
       <p class="eyebrow">A specialized ML coding agent</p>
-      <h1>One agent, three tool forms, one end-to-end workflow.</h1>
-      <!-- VOICE: tighten this lede to the framing you want. The default below
-           sets up the chapter as a capstone — sharpen it if you want a
-           different angle. -->
+      <h1>Same workflow, two action shapes. CodeAct wins on every axis that matters.</h1>
       <p>
-        A single agent that, given a problem statement, finds a relevant
-        Kaggle dataset, pulls it, analyzes it, preprocesses it, and fits a
-        baseline model. It uses a <strong>function tool</strong> for the
-        Kaggle CLI, a <strong>skill</strong> for the modeling sweep, and
-        <strong>CodeAct</strong> for everything in between. The lesson: tool
-        forms aren't alternatives. They're a vocabulary.
+        The task is fixed: fetch a Kaggle dataset, clean it, fit a baseline
+        model. The question is how the agent expresses each step. ReAct-style
+        JSON tool calling fragments the workflow into many roundtrips, each
+        a new tool the developer maintains. CodeAct collapses each phase to
+        one Python block — and where structure helps, that block still
+        calls function tools and invokes skills. <strong>CodeAct doesn't
+        replace tools and skills. It composes them.</strong>
       </p>
     </div>
 
-    <article class="harness-row">
-      <div class="harness-row__intro">
-        <span>Stage 01 · Function tool</span>
-        <h3>Pull the dataset.</h3>
+    <div class="vs-phase">
+      <div class="vs-phase__head">
+        <span class="vs-phase__label">Phase 01</span>
+        <h2>Fetch the dataset.</h2>
         <p>
-          <code>kaggle datasets download</code> is a typed, bounded action
-          with a deterministic result. That's the function-tool sweet spot.
-          Wrap it as <code>kaggle_download(dataset)</code>, give it a
-          timeout, and let the agent call it through the standard
-          <code>function_call</code> protocol from chapter 03A.
+          Three CLI operations: search Kaggle, download, list the files.
+          ReAct ships three tools and burns three turns. CodeAct calls the
+          same two function tools (<code>kaggle_search</code>,
+          <code>kaggle_download</code>) inline — typed, bounded, exactly
+          as designed — then continues straight into pandas without a
+          roundtrip.
         </p>
       </div>
-      <figure class="code-card">
-        <figcaption>
-          <span class="lang-pill">python</span>
-          <span class="code-filename">kaggle_tool.py</span>
-          <span class="code-tag">stage 01</span>
-        </figcaption>
-        <Code code={kaggleToolCode} lang="python" theme="github-light" />
-      </figure>
-    </article>
+      <div class="compare-grid vs-grid">
+        <figure class="code-card vs-card vs-card--react">
+          <figcaption>
+            <span class="vs-pill vs-pill--react">ReAct · JSON tool calls</span>
+            <span class="code-filename">3 turns · 3 tools</span>
+          </figcaption>
+          <Code code={fetchReactTrace} lang="python" theme="github-light" />
+        </figure>
+        <figure class="code-card vs-card vs-card--codeact">
+          <figcaption>
+            <span class="vs-pill vs-pill--codeact">CodeAct</span>
+            <span class="code-filename">1 turn · uses kaggle_search + kaggle_download</span>
+          </figcaption>
+          <Code code={fetchCodeActScript} lang="python" theme="github-light" />
+        </figure>
+      </div>
+    </div>
 
-    <article class="harness-row">
-      <div class="harness-row__intro">
-        <span>Stage 02 · CodeAct</span>
-        <h3>Inspect, find the data quirks.</h3>
+    <div class="vs-phase">
+      <div class="vs-phase__head">
+        <span class="vs-phase__label">Phase 02</span>
+        <h2>Clean the data.</h2>
         <p>
-          Once the file lands, the action shape switches. The agent reads the
-          schema, checks the target distribution, and notices that
-          <code>TotalCharges</code> is typed <code>object</code> because of
-          eleven blank strings — the kind of finding no JSON tool schema
-          could express in a single call.
+          Coerce a broken numeric column, impute, label-encode sixteen
+          categoricals, stratify-split. ReAct needs a tool per atomic op:
+          eight turns minimum, more if you encode columns one at a time.
+          CodeAct does the lot in twelve lines of pandas and sklearn — no
+          new tools, no new schemas, no glue code.
         </p>
       </div>
-      <figure class="code-card">
-        <figcaption>
-          <span class="lang-pill">python</span>
-          <span class="code-filename">inspect.py</span>
-          <span class="code-tag">stage 02</span>
-        </figcaption>
-        <Code code={inspectCode} lang="python" theme="github-light" />
-      </figure>
-    </article>
+      <div class="compare-grid vs-grid">
+        <figure class="code-card vs-card vs-card--react">
+          <figcaption>
+            <span class="vs-pill vs-pill--react">ReAct · JSON tool calls</span>
+            <span class="code-filename">8+ turns · 6+ tools</span>
+          </figcaption>
+          <Code code={cleanReactTrace} lang="python" theme="github-light" />
+        </figure>
+        <figure class="code-card vs-card vs-card--codeact">
+          <figcaption>
+            <span class="vs-pill vs-pill--codeact">CodeAct</span>
+            <span class="code-filename">1 turn · pandas + sklearn</span>
+          </figcaption>
+          <Code code={cleanCodeActScript} lang="python" theme="github-light" />
+        </figure>
+      </div>
+    </div>
 
-    <article class="harness-row">
-      <div class="harness-row__intro">
-        <span>Stage 03 · CodeAct</span>
-        <h3>Clean, encode, split.</h3>
+    <div class="vs-phase">
+      <div class="vs-phase__head">
+        <span class="vs-phase__label">Phase 03</span>
+        <h2>Fit and evaluate the model.</h2>
         <p>
-          Preprocessing is where CodeAct most clearly beats enumerated tools.
-          Coerce the broken numeric column, impute, label-encode the
-          categoricals, stratify the split. None of this fits in a JSON
-          schema — but all of it is a few lines of pandas + sklearn.
+          A baseline sweep is exactly the kind of work a <strong>skill</strong>
+          should own — same three estimators, same scoring, same output
+          shape every run. ReAct ships a tool per estimator and a tool per
+          scoring step. CodeAct invokes the <code>ml-baseline</code> skill
+          for the sweep, then writes ordinary Python around it to pick the
+          winner, fit, evaluate, and persist. The skill stays inside the
+          one Python block; no extra turn is needed.
         </p>
       </div>
-      <figure class="code-card">
-        <figcaption>
-          <span class="lang-pill">python</span>
-          <span class="code-filename">preprocess.py</span>
-          <span class="code-tag">stage 03</span>
-        </figcaption>
-        <Code code={preprocessCode} lang="python" theme="github-light" />
-      </figure>
-    </article>
-
-    <article class="harness-row">
-      <div class="harness-row__intro">
-        <span>Stage 04 · Skill</span>
-        <h3>Run the baseline sweep.</h3>
-        <p>
-          Modeling sweeps benefit from <em>prescription</em>: try the same
-          three estimators, score them the same way, output the same shape.
-          That's exactly what a skill packages — the procedure, the
-          templates, the expected output. The agent invokes the skill rather
-          than reinventing the sweep each run.
-        </p>
+      <div class="compare-grid vs-grid">
+        <figure class="code-card vs-card vs-card--react">
+          <figcaption>
+            <span class="vs-pill vs-pill--react">ReAct · JSON tool calls</span>
+            <span class="code-filename">6+ turns · 4+ tools</span>
+          </figcaption>
+          <Code code={fitReactTrace} lang="python" theme="github-light" />
+        </figure>
+        <figure class="code-card vs-card vs-card--codeact">
+          <figcaption>
+            <span class="vs-pill vs-pill--codeact">CodeAct</span>
+            <span class="code-filename">1 turn · invokes ml-baseline skill</span>
+          </figcaption>
+          <Code code={fitCodeActScript} lang="python" theme="github-light" />
+        </figure>
       </div>
-      <figure class="code-card">
-        <figcaption>
-          <span class="lang-pill">python</span>
-          <span class="code-filename">ml_baseline_skill.py</span>
-          <span class="code-tag">stage 04</span>
-        </figcaption>
-        <Code code={skillCode} lang="python" theme="github-light" />
-      </figure>
-    </article>
-
-    <article class="harness-row">
-      <div class="harness-row__intro">
-        <span>Stage 05 · CodeAct</span>
-        <h3>Pick a winner, fit, persist.</h3>
-        <p>
-          Choosing the model is a judgment call grounded in numbers; fitting
-          and persisting it is mechanical. Both belong in code, in one
-          block. The artifact at the end is the handoff to whoever ships it
-          — or to the next agent in the chain.
-        </p>
-      </div>
-      <figure class="code-card">
-        <figcaption>
-          <span class="lang-pill">python</span>
-          <span class="code-filename">finalize.py</span>
-          <span class="code-tag">stage 05</span>
-        </figcaption>
-        <Code code={finalizeCode} lang="python" theme="github-light" />
-      </figure>
-    </article>
+    </div>
 
     <div class="signal-panel" style="margin-top: 36px;">
-      <h3>What this chapter showed</h3>
+      <h3>The scoreboard</h3>
       <div>
         <article>
-          <span>Three tool forms, in sequence</span>
-          <strong>Function tool for the CLI wrapper, CodeAct for analysis and preprocessing, skill for the prescribed modeling sweep, CodeAct again for the close-out. The shape adapts to the work.</strong>
+          <span>Turns</span>
+          <strong>ReAct: 17+ model turns across the workflow. CodeAct: 3. Each ReAct turn is a network roundtrip and a fresh model pass over the growing context.</strong>
         </article>
         <article>
-          <span>One harness wraps all of them</span>
-          <strong>Sessions, events, confirmations, and evals don't change between stages. The runner streams events; the eval set can assert on the trajectory across all five stages.</strong>
+          <span>Tools shipped</span>
+          <strong>ReAct: 13+ purpose-built tools, each with a schema the developer maintains. CodeAct: 2 function tools (<code>kaggle_search</code>, <code>kaggle_download</code>) and 1 skill (<code>ml-baseline</code>) — and CodeAct calls them inside its scripts.</strong>
         </article>
         <article>
-          <span>The action shape is a design choice</span>
-          <strong>The agent architect's real job is picking which form goes where. "Always JSON" or "always CodeAct" both leave value on the table.</strong>
+          <span>Composition</span>
+          <strong>ReAct can only combine ops the developer pre-wired into tools. CodeAct combines anything pandas, sklearn, and the language can express — and still calls the typed tools where they help.</strong>
         </article>
       </div>
     </div>
 
-    <!-- VOICE: one closing line tying back to the harness chapter. Default below. -->
     <p class="chapter-close">
-      A specialized coding agent isn't a different kind of agent. It is the
-      harness story from chapter 05 with the action surface tuned to the
-      domain — function tools where actions are bounded, CodeAct where they
-      aren't, and skills where the procedure matters more than the freedom.
+      The right frame isn't "CodeAct or tools." It's "CodeAct that calls
+      tools and skills where they belong." Function tools and skills don't
+      lose value in a CodeAct system — they become reusable building blocks
+      inside scripts the model writes. ReAct can't do that.
     </p>
   </section>
 </SiteLayout>

@@ -34,8 +34,8 @@ root_agent = Agent(
     </div>
 
     <div class="detail-grid">
-      <article class="detail-card">
-        <span>Use when</span>
+      <article class="practice-section practice-section--do">
+        <span class="tool-kind">Use when</span>
         <h3>The action is bounded.</h3>
         <p>
           The model should choose parameters, not invent the implementation.
@@ -43,8 +43,8 @@ root_agent = Agent(
           calculate quote, or fetch machine status.
         </p>
       </article>
-      <article class="detail-card">
-        <span>Design for</span>
+      <article class="practice-section practice-section--do">
+        <span class="tool-kind">Design for</span>
         <h3>Contracts and recovery.</h3>
         <p>
           Keep inputs typed, outputs structured, errors explicit, and side
@@ -52,8 +52,8 @@ root_agent = Agent(
           for the next decision.
         </p>
       </article>
-      <article class="detail-card">
-        <span>Avoid</span>
+      <article class="practice-section practice-section--avoid">
+        <span class="tool-kind">Avoid</span>
         <h3>Generic escape hatches.</h3>
         <p>
           A function named <code>do_task</code> with a raw prompt argument is
@@ -63,27 +63,41 @@ root_agent = Agent(
       </article>
     </div>
 
-    <div class="signal-panel signal-panel--four" style="margin-top: 28px;">
-      <h3>How a function tool call actually flows</h3>
-      <div>
-        <article>
-          <span>01 · Setup</span>
-          <strong>The runtime introspects the Python signature and docstring into a JSON schema, then hands the schema to the model as part of its prompt — the model sees a list of available <code>function_declarations</code>, not the Python callables themselves.</strong>
-        </article>
-        <article>
-          <span>02 · Decision</span>
-          <strong>The model emits a structured <code>function_call</code> part — a name and an args object that conform to the schema. This is constrained decoding, not free text. The model never executes anything; it only produces an instruction.</strong>
-        </article>
-        <article>
-          <span>03 · Dispatch</span>
-          <strong>The runtime receives the <code>function_call</code> event, looks up the Python callable by name, validates the args, and invokes it. Permissions, confirmations, timeouts, and retries apply <em>here</em>, not inside the model.</strong>
-        </article>
-        <article>
-          <span>04 · Response</span>
-          <strong>The return value becomes a <code>function_response</code> event appended to the session and fed back to the model on the next turn. The model reads it and decides what to do next.</strong>
-        </article>
-      </div>
+    <div class="section-head compact-head" style="margin-top: 40px;">
+      <p class="eyebrow">The protocol</p>
+      <h2>How a function tool call actually flows.</h2>
     </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Setup</strong>
+          <p>The runtime introspects the Python signature and docstring into a JSON schema, then hands the schema to the model as part of its prompt. The model sees a list of available <code>function_declarations</code>, not the Python callables themselves.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Decision</strong>
+          <p>The model emits a structured <code>function_call</code> part — a name and an args object that conform to the schema. This is constrained decoding, not free text. The model never executes anything; it only produces an instruction.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Dispatch</strong>
+          <p>The runtime receives the <code>function_call</code> event, looks up the Python callable by name, validates the args, and invokes it. Permissions, confirmations, timeouts, and retries apply <em>here</em>, not inside the model.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Response</strong>
+          <p>The return value becomes a <code>function_response</code> event appended to the session and fed back to the model on the next turn. The model reads it and decides what to do next.</p>
+        </div>
+      </li>
+    </ul>
 
     <p class="mechanism-note">
       The same four-step shape — declare, decide, dispatch, respond — appears

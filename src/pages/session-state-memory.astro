@@ -1,0 +1,269 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+import { url } from '../lib/url';
+
+const theme = 'github-light';
+
+const sessionCode = `from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
+session_service = InMemorySessionService()
+
+session = await session_service.create_session(
+    app_name="maintenance_agent",
+    user_id="operator-7",
+    session_id="alarm-e118",
+    state={"line": "press-2", "machine_id": "M-42"},
+)
+
+runner = Runner(
+    agent=root_agent,
+    app_name="maintenance_agent",
+    session_service=session_service,
+)
+
+message = types.Content(
+    role="user",
+    parts=[types.Part(text="Diagnose alarm E118 on M-42")],
+)
+
+async for event in runner.run_async(
+    user_id="operator-7",
+    session_id=session.id,
+    new_message=message,
+):
+    if event.is_final_response():
+        print(event.content.parts[0].text)`;
+
+const stateCode = `def capture_alarm(tool_context, machine_id: str, alarm_code: str):
+    # Session state: only for this conversation thread.
+    tool_context.state["current_alarm"] = alarm_code
+
+    # User state: shared across sessions for this user.
+    tool_context.state["user:last_machine_id"] = machine_id
+
+    # Temp state: available during this turn, never persisted.
+    tool_context.state["temp:raw_alarm_payload"] = fetch_alarm_payload(machine_id)
+
+    return {"status": "captured"}`;
+
+const memoryCode = `from google.adk.memory import InMemoryMemoryService
+from google.adk.tools import load_memory
+
+memory_service = InMemoryMemoryService()
+
+runner = Runner(
+    agent=info_capture_agent,
+    app_name="maintenance_agent",
+    session_service=session_service,
+    memory_service=memory_service,
+)
+
+completed = await runner.session_service.get_session(
+    app_name="maintenance_agent",
+    user_id="operator-7",
+    session_id="alarm-e118",
+)
+
+# Memory is explicit: ingest a session, then search it later.
+await memory_service.add_session_to_memory(completed)
+
+recall_agent = LlmAgent(
+    model="gemini-2.5-flash",
+    name="recall_agent",
+    instruction="Use memory when the user asks about past work.",
+    tools=[load_memory],
+)`;
+---
+
+<SiteLayout current="context" title="Session, State, and Memory">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Context model</p>
+      <h1>Session, state, and memory are three different things.</h1>
+      <p>
+        Agents do not have one generic bucket called "memory." ADK splits
+        context into a current conversation thread, a scratchpad inside
+        that thread, and searchable knowledge that can span past sessions.
+      </p>
+    </div>
+
+    <div class="mini-diagram context-diagram" aria-hidden="true">
+      <svg viewBox="0 0 720 188" role="presentation">
+        <defs>
+          <marker id="context-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M 0 0 L 8 4 L 0 8 z"></path>
+          </marker>
+        </defs>
+        <g class="context-diagram__links">
+          <path d="M 190 94 H 318"></path>
+          <path d="M 402 94 H 530"></path>
+          <path d="M 614 94 C 658 94, 658 148, 360 148 C 126 148, 126 124, 106 108"></path>
+        </g>
+        <g class="context-node-svg context-node-svg--session">
+          <rect x="22" y="42" width="168" height="72" rx="20"></rect>
+          <text x="106" y="70" text-anchor="middle" dominant-baseline="middle">Session</text>
+          <text class="context-node-svg__subtext" x="106" y="95" text-anchor="middle" dominant-baseline="middle">thread + events</text>
+        </g>
+        <g class="context-node-svg context-node-svg--state">
+          <rect x="318" y="42" width="84" height="72" rx="20"></rect>
+          <text x="360" y="70" text-anchor="middle" dominant-baseline="middle">State</text>
+          <text class="context-node-svg__subtext" x="360" y="95" text-anchor="middle" dominant-baseline="middle">live keys</text>
+        </g>
+        <g class="context-node-svg context-node-svg--memory">
+          <rect x="530" y="42" width="168" height="72" rx="20"></rect>
+          <text x="614" y="70" text-anchor="middle" dominant-baseline="middle">Memory</text>
+          <text class="context-node-svg__subtext" x="614" y="95" text-anchor="middle" dominant-baseline="middle">searchable recall</text>
+        </g>
+      </svg>
+    </div>
+
+    <ul class="glossary-list">
+      <li>
+        <strong class="color-context">Context:</strong> The immediate payload. Everything the model can see <em>right now</em>, including session data, instructions, tools, and runtime variables.
+      </li>
+      <li>
+        <strong class="color-session">Session:</strong> The persistent thread. The historical container for a single conversation that holds the chronological sequence of events.
+      </li>
+      <li>
+        <strong class="color-state">State:</strong> The live scratchpad. Serializable key-value data tracked explicitly inside that context while the run is in progress.
+      </li>
+      <li>
+        <strong class="color-memory">Memory:</strong> The searchable archive. Long-term knowledge pulled in from past sessions or external sources.
+      </li>
+    </ul>
+
+    <div class="detail-grid">
+      <article class="detail-card concept-detail concept-detail--session">
+        <span class="tool-kind">session.events</span>
+        <h3>The audit trail.</h3>
+        <p>
+          A session stores the chronological <code>Event</code> list:
+          user messages, model responses, tool calls, tool responses, and
+          state deltas.
+        </p>
+      </article>
+      <article class="detail-card concept-detail concept-detail--state">
+        <span class="tool-kind">session.state</span>
+        <h3>The live scratchpad.</h3>
+        <p>
+          State is for dynamic facts like task progress, selected entities,
+          preferences, and flags. Keep values serializable and shallow.
+        </p>
+      </article>
+      <article class="detail-card concept-detail concept-detail--memory">
+        <span class="tool-kind">MemoryService</span>
+        <h3>The archive is explicit.</h3>
+        <p>
+          ADK does not automatically make every past chat available. Your
+          app ingests sessions into memory, then an agent searches memory
+          through a tool such as <code>load_memory</code>.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">storage choice</span>
+        <h3>Persistence is a backend decision.</h3>
+        <p>
+          <code>InMemorySessionService</code> is for local testing and
+          loses data on restart. Database and Vertex AI services persist
+          sessions and state.
+        </p>
+      </article>
+    </div>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">session_thread.py</span>
+        <span class="code-tag">SessionService + Runner</span>
+      </figcaption>
+      <Code code={sessionCode} lang="python" theme={theme} />
+    </figure>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">State scope</p>
+      <h2>State keys encode where the data belongs.</h2>
+      <p>ADK uses prefixes to separate state scope.</p>
+    </div>
+
+    <ul class="scope-list">
+      <li><strong>No prefix</strong> — Current session only.</li>
+      <li><strong>user:</strong> — Shared across sessions for the same user.</li>
+      <li><strong>app:</strong> — Shared across the application.</li>
+      <li><strong>temp:</strong> — Turn-local and not persisted.</li>
+    </ul>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">state_scope.py</span>
+        <span class="code-tag">ToolContext.state</span>
+      </figcaption>
+      <Code code={stateCode} lang="python" theme={theme} />
+    </figure>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Long-term recall</p>
+      <h2>Memory is not the same as session history.</h2>
+      <p>
+        Session history records one thread. Memory is searchable recall that
+        can include past sessions.
+      </p>
+    </div>
+
+    <ul class="scope-list">
+      <li><strong>add_session_to_memory (Ingestion)</strong> — Promotes a completed session into searchable memory.</li>
+      <li><strong>search_memory / load_memory (Retrieval)</strong> — Lets an agent query memory and pull relevant facts back into the run.</li>
+    </ul>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">long_term_memory.py</span>
+        <span class="code-tag">MemoryService</span>
+      </figcaption>
+      <Code code={memoryCode} lang="python" theme={theme} />
+    </figure>
+
+    <div class="practices-split">
+      <div class="practice-section practice-section--do">
+        <span class="tool-kind">Do</span>
+        <ul>
+          <li>
+            <strong>Update state through events or context objects.</strong>
+            Use <code>output_key</code>, <code>EventActions.state_delta</code>,
+            <code>CallbackContext.state</code>, or <code>ToolContext.state</code>
+            so updates are tracked and persisted.
+          </li>
+          <li>
+            <strong>Promote facts deliberately.</strong>
+            A fact starts in state when it matters now. Promote it to memory
+            only when future sessions should be able to search for it.
+          </li>
+        </ul>
+      </div>
+      <div class="practice-section practice-section--avoid">
+        <span class="tool-kind">Avoid</span>
+        <ul>
+          <li>
+            <strong>Mutating retrieved session state directly.</strong>
+            Direct writes can bypass event history, break persistence in
+            database-backed services, and lose auditability.
+          </li>
+          <li>
+            <strong>Using memory as a dumping ground.</strong>
+            Memory is retrieval surface area. Store concise, useful facts;
+            avoid secrets, raw payloads, and noisy intermediate data.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <a class="next-card" href={url('/orchestration/')}>
+      <span>Next</span>
+      <strong>Choose the control shape that runs over this context</strong>
+    </a>
+  </section>
+</SiteLayout>

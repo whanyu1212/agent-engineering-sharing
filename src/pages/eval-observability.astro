@@ -4,13 +4,85 @@ import SiteLayout from '../layouts/SiteLayout.astro';
 import { url } from '../lib/url';
 
 const evalCaseCode = `{
-  "input": "Machine M-42 has alarm E118. What should we check?",
-  "expected_tools": ["read_alarm_history", "fetch_sensor_window"],
-  "assertions": [
-    "uses recent machine context",
-    "does not recommend shutdown without evidence",
-    "asks for technician approval before work order creation"
+  "eval_set_id": "manufacturing_diagnostics",
+  "name": "Manufacturing diagnostics",
+  "eval_cases": [
+    {
+      "eval_id": "alarm_e118_requires_diagnostics",
+      "conversation": [
+        {
+          "invocation_id": "inv-001",
+          "user_content": {
+            "parts": [{ "text": "Machine M-42 has alarm E118. What should we check?" }],
+            "role": "user"
+          },
+          "final_response": {
+            "parts": [{ "text": "Check recent alarm history and the pressure sensor trend before creating a work order." }],
+            "role": "model"
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              {
+                "name": "read_alarm_history",
+                "args": { "machine_id": "M-42" }
+              },
+              {
+                "name": "fetch_sensor_window",
+                "args": { "machine_id": "M-42", "minutes": 30 }
+              }
+            ],
+            "intermediate_responses": []
+          }
+        }
+      ],
+      "session_input": {
+        "app_name": "maintenance_agent",
+        "user_id": "operator-7",
+        "state": { "line": "press-2" }
+      }
+    }
   ]
+}`;
+
+const evalConfigCode = `{
+  "criteria": {
+    "tool_trajectory_avg_score": 1.0,
+    "response_match_score": 0.8
+  }
+}`;
+
+const evalRunnerCode = `# CLI: run the same eval set in automation.
+adk eval maintenance_agent diagnostics.evalset.json \\
+    --config_file_path=test_config.json \\
+    --print_detailed_results
+
+# Pytest: wire evals into CI.
+from google.adk.evaluation.agent_evaluator import AgentEvaluator
+
+@pytest.mark.asyncio
+async def test_alarm_e118_eval():
+    await AgentEvaluator.evaluate(
+        agent_module="maintenance_agent",
+        eval_dataset_file_path_or_dir="tests/evals/diagnostics.evalset.json",
+        num_runs=2,
+    )`;
+
+const judgeRubricCode = `You are judging an agent response for a manufacturing diagnostic workflow.
+
+Score each dimension from 1 to 5:
+- Groundedness: uses only tool results and session context.
+- Completeness: covers the likely diagnosis and next safe step.
+- Procedure fit: follows maintenance policy and approval rules.
+- Clarity: gives a technician an actionable answer.
+
+Return JSON:
+{
+  "groundedness": 1,
+  "completeness": 1,
+  "procedure_fit": 1,
+  "clarity": 1,
+  "rationale": "short explanation",
+  "pass": false
 }`;
 ---
 
@@ -66,6 +138,183 @@ const evalCaseCode = `{
           <strong>latency, cost, token use, timeout rate, failure clusters</strong>
         </article>
       </div>
+    </div>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Metric taxonomy</p>
+      <h2>Split deterministic checks from judgment calls.</h2>
+      <p>
+        Agent evals need both: hard checks for things the system must do,
+        and qualitative checks for answers that can be correct in more than
+        one form.
+      </p>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span class="tool-kind">Trajectory</span>
+        <h3>Did it take the right path?</h3>
+        <p>
+          Compare expected and actual tool calls. ADK exposes this as
+          <code>tool_trajectory_avg_score</code>, with exact, in-order,
+          any-order, precision, recall, and single-tool variants as useful
+          mental models.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Arguments</span>
+        <h3>Were tool inputs correct?</h3>
+        <p>
+          Assert entity IDs, time windows, filters, and safety flags. A
+          correct tool with wrong args is usually worse than no tool call.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Response</span>
+        <h3>Did the final answer match?</h3>
+        <p>
+          ADK uses <code>response_match_score</code> for reference-response
+          similarity. Use it for stable answers; use judges for subjective
+          dimensions.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Safety</span>
+        <h3>Did it avoid forbidden actions?</h3>
+        <p>
+          Track unsafe tool calls, missing approvals, policy bypasses,
+          data leakage, and unsupported recommendations.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Runtime</span>
+        <h3>Did it stay healthy?</h3>
+        <p>
+          Measure latency, model calls, token use, cost, retries,
+          timeouts, tool errors, and fallback rate.
+        </p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Human loop</span>
+        <h3>Did people have to rescue it?</h3>
+        <p>
+          Track correction rate, escalation rate, approval latency, and
+          cases where humans reject or rewrite the agent's work.
+        </p>
+      </article>
+    </div>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">LLM-as-judge</p>
+      <h2>Use judges where exact matching breaks down.</h2>
+      <p>
+        A judge model is useful for groundedness, completeness, tone,
+        policy fit, and usefulness. It should not replace deterministic
+        trajectory checks. Use a rubric, return structured scores, and
+        calibrate judge results against human review.
+      </p>
+    </div>
+
+    <div class="feedback-grid">
+      <article class="feedback-card eval-card">
+        <span>Good judge use</span>
+        <h3>Subjective but rubric-bound.</h3>
+        <ul>
+          <li>Give the judge the user input, tool results, final answer, and rubric.</li>
+          <li>Ask for structured JSON scores, not free-form taste.</li>
+          <li>Sample failures for human review and recalibrate thresholds.</li>
+        </ul>
+      </article>
+
+      <article class="feedback-card trace-card">
+        <span>Bad judge use</span>
+        <h3>Replacing ground truth with vibes.</h3>
+        <ul>
+          <li>Do not ask a judge whether the right tool was called; assert the event path.</li>
+          <li>Do not let the judge infer hidden facts that were not in the trace.</li>
+          <li>Do not ship a judge metric without examples of pass and fail cases.</li>
+        </ul>
+      </article>
+    </div>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">text</span>
+        <span class="code-filename">judge_rubric.txt</span>
+        <span class="code-tag">LLM-as-judge rubric</span>
+      </figcaption>
+      <Code code={judgeRubricCode} lang="text" theme="github-light" />
+    </figure>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Eval levels</p>
+      <h2>Run different tests at different speeds.</h2>
+      <p>
+        Fast checks should run on every change. Rich scenarios can run less
+        often. Production metrics keep watch after deployment.
+      </p>
+    </div>
+
+    <div class="detail-grid">
+      <article class="detail-card">
+        <span class="tool-kind">Unit</span>
+        <h3>Tool and prompt checks.</h3>
+        <p>Validate schemas, fixtures, prompt contracts, parser behavior, and error handling.</p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Trajectory</span>
+        <h3>One-turn agent behavior.</h3>
+        <p>Assert tool sequence, args, intermediate responses, and final answer for a single user turn.</p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Scenario</span>
+        <h3>Multi-turn workflow tests.</h3>
+        <p>Cover state carryover, retries, handoffs, approvals, and long-running paths.</p>
+      </article>
+      <article class="detail-card">
+        <span class="tool-kind">Online</span>
+        <h3>Production monitoring.</h3>
+        <p>Watch drift, latency, cost, tool failures, user corrections, and judge-score trends.</p>
+      </article>
+    </div>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">ADK eval files</p>
+      <h2>ADK captures both trajectory and final response.</h2>
+      <p>
+        An ADK eval case stores user content, expected tool-use trajectory,
+        optional intermediate responses, the reference final response, and
+        initial session state. Criteria then set the pass thresholds.
+      </p>
+    </div>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">json</span>
+        <span class="code-filename">diagnostics.evalset.json</span>
+        <span class="code-tag">ADK evalset shape</span>
+      </figcaption>
+      <Code code={evalCaseCode} lang="json" theme="github-light" />
+    </figure>
+
+    <div class="compare-grid">
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">json</span>
+          <span class="code-filename">test_config.json</span>
+          <span class="code-tag">ADK criteria</span>
+        </figcaption>
+        <Code code={evalConfigCode} lang="json" theme="github-light" />
+      </figure>
+
+      <figure class="code-card">
+        <figcaption>
+          <span class="lang-pill">python</span>
+          <span class="code-filename">run_evals.py</span>
+          <span class="code-tag">CLI + pytest</span>
+        </figcaption>
+        <Code code={evalRunnerCode} lang="python" theme="github-light" />
+      </figure>
     </div>
 
     <div class="examples-section">
@@ -149,13 +398,9 @@ const evalCaseCode = `{
       </div>
     </div>
 
-    <figure class="code-card code-card--standalone">
-      <figcaption>
-        <span class="lang-pill">json</span>
-        <span class="code-filename">agent_eval_case.json</span>
-        <span class="code-tag">framework-agnostic shape</span>
-      </figcaption>
-      <Code code={evalCaseCode} lang="json" theme="github-light" />
-    </figure>
+    <a class="next-card" href={url('/harness-engineering/')}>
+      <span>Next</span>
+      <strong>Where runtime behavior becomes a harness</strong>
+    </a>
   </section>
 </SiteLayout>

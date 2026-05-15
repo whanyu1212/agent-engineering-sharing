@@ -9,7 +9,7 @@ import { url } from '../lib/url';
     <p class="landing-lede">
       A set of opinionated notes for an internal sharing on agent
       engineering: what agents are, how they use tools, how to test them,
-      and where Google ADK and CodeAct fit.
+      and where Google ADK and tool-augmented code generation fit.
     </p>
     <div class="landing-anchors">
       <a href={url('/what-is-agent/')}>Start with the agent loop <span aria-hidden="true">→</span></a>
@@ -27,15 +27,27 @@ import { url } from '../lib/url';
       <li><a href={url('/what-is-agent/')}><span>01</span><strong>What is an agent?</strong><em>Models in a control loop: state, tools, observations, and stopping criteria.</em></a></li>
       <li><a href={url('/session-state-memory/')}><span>01A</span><strong>Session, state, memory</strong><em>The current thread, the live scratchpad, and long-term searchable context.</em></a></li>
       <li><a href={url('/orchestration/')}><span>02</span><strong>Design patterns</strong><em>ReAct, planner-executor, reflection, multi-agent, graph, CodeAct — the six shapes an agent runs in.</em></a></li>
-      <li><a href={url('/engineering-practice/')}><span>03</span><strong>Tools &amp; capability</strong><em>Function tools, MCP, skills, code execution, retrieval, and human handoff.</em></a></li>
+      <li><a href={url('/engineering-practice/')}><span>03</span><strong>Tools &amp; capability</strong><em>Function tools, MCP, skills, code execution, retrieval, and human handoff control points.</em></a></li>
       <li><a href={url('/function-tools/')}><span>03A</span><strong>Function tools</strong><em>The narrowest useful tool form.</em></a></li>
       <li><a href={url('/skills/')}><span>03B</span><strong>Skills</strong><em>Packaged repeatable know-how.</em></a></li>
       <li><a href={url('/code-execution/')}><span>03C</span><strong>Code execution</strong><em>Code execution as a tool form — the runtime piece behind CodeAct.</em></a></li>
+      <li><a href={url('/human-handoff/')}><span>03D</span><strong>Human handoff</strong><em>Approval, escalation, override — control points where a person inspects the loop.</em></a></li>
+      <li><a href={url('/search-retrieval/')}><span>03E</span><strong>Search &amp; retrieval</strong><em>Web search, docs lookup, vector search, memory recall — how the agent grounds itself.</em></a></li>
+      <li><a href={url('/mcp-servers/')}><span>03F</span><strong>MCP servers</strong><em>Shared capabilities through a standard interface — one server, many agents.</em></a></li>
+      <li><a href={url('/file-system-os/')}><span>03G</span><strong>File system &amp; OS</strong><em>Tools for reading, writing, grepping, and navigating local directories.</em></a></li>
+      <li><a href={url('/browser-computer-use/')}><span>03H</span><strong>Browser &amp; computer use</strong><em>Interact with graphical UIs and control web browsers (Coming soon).</em></a></li>
       <li><a href={url('/eval-observability/')}><span>04</span><strong>Eval &amp; observability</strong><em>Traces explain what happened. Evals tell whether it was good enough.</em></a></li>
+      <li><a href={url('/agentic-evaluation/')}><span>04A</span><strong>Agentic evaluation <span class="nav-badge">Soon</span></strong><em>Using coding agents to automate evaluation and create self-evolving systems.</em></a></li>
       <li><a href={url('/harness-engineering/')}><span>05</span><strong>Harness concept</strong><em>The runtime boundary around state, tools, permissions, replay, and tests.</em></a></li>
       <li><a href={url('/harness-examples/')}><span>05A</span><strong>ADK harness examples</strong><em>Runner, confirmations, HITL, evals, events — the harness made concrete.</em></a></li>
-      <li><a href={url('/codeact/')}><span>06</span><strong>CodeAct Deep Dive</strong><em>The action shape that scales. Defended properly, with the trade-off named.</em></a></li>
-      <li><a href={url('/codeact-ds-agent/')}><span>06A</span><strong>A specialized ML agent</strong><em>End-to-end Kaggle workflow: function tool for the CLI, skill for the modeling sweep, CodeAct in between.</em></a></li>
+      <li><a href={url('/cost-latency/')}><span>05B</span><strong>Cost &amp; latency engineering</strong><em>Budgets, parallelization, deterministic caching, and routing by difficulty.</em></a></li>
+      <li><a href={url('/failure-modes/')}><span>05C</span><strong>Failure-mode catalog</strong><em>Plan, tool, and grounding failures, plus the runbooks to detect and mitigate them.</em></a></li>
+      <li class="toc-divider" aria-hidden="true"><span>Optional deep dives</span></li>
+      <li><a href={url('/codeact/')}><span>06</span><strong>CodeAct deep dive</strong><em>The action shape that scales. Defended properly, with the trade-off named.</em></a></li>
+      <li><a href={url('/codeact-ds-agent/')}><span>06A</span><strong>ML agent: a coding agent, specialized</strong><em>End-to-end Kaggle workflow: function tool for the CLI, skill for the modeling sweep, CodeAct in between.</em></a></li>
+      <li><a href={url('/security-model/')}><span>06B</span><strong>Security &amp; permission model</strong><em>Least privilege, policy gates, and building permissions as a stack.</em></a></li>
+      <li><a href={url('/rollout-lifecycle/')}><span>06C</span><strong>Rollout lifecycle</strong><em>Canary, versioning, shadow runs, and fast rollbacks.</em></a></li>
+      <li><a href={url('/resources/')}><span>07</span><strong>Useful resources</strong><em>Curated reading on agent design, evals, frameworks, and protocols.</em></a></li>
     </ol>
   </section>
 </SiteLayout>

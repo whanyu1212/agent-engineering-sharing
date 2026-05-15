@@ -37,35 +37,100 @@ root_agent = Agent(
       </p>
     </div>
 
-    <div class="detail-grid">
-      <article class="detail-card">
-        <span>Use when</span>
-        <h3>The work has a method.</h3>
-        <p>
-          Skills fit recurring workflows: render a document, analyze a dataset,
-          prepare a release note, run a diagnostics playbook, or follow a
-          company-specific review process.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span>Include</span>
-        <h3>Instructions plus assets.</h3>
-        <p>
-          Put the core procedure in one readable guide. Add scripts for
-          mechanical steps, templates for output shape, and examples that show
-          what good execution looks like.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span>Design for</span>
-        <h3>Triggering and scope.</h3>
-        <p>
-          Make it obvious when the skill should be used, what it owns, and when
-          it should stop. The best skills reduce ambiguity without hiding the
-          work.
-        </p>
-      </article>
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Use when</span>
+          <strong>The work has a method.</strong>
+          <p>Skills fit recurring workflows: render a document, analyze a dataset, prepare a release note, run a diagnostics playbook, or follow a company-specific review process.</p>
+        </article>
+        <article>
+          <span>Include</span>
+          <strong>Instructions plus assets.</strong>
+          <p>Put the core procedure in one readable guide. Add scripts for mechanical steps, templates for output shape, and examples that show what good execution looks like.</p>
+        </article>
+        <article>
+          <span>Design for</span>
+          <strong>Triggering and scope.</strong>
+          <p>Make it obvious when the skill should be used, what it owns, and when it should stop. The best skills reduce ambiguity without hiding the work.</p>
+        </article>
+      </div>
     </div>
+
+    <div class="section-head compact-head" style="margin-top: 40px;">
+      <p class="eyebrow">The protocol</p>
+      <h2>How a skill is loaded and invoked.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Skill execution flow diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 124 56 H 180"></path>
+          <path d="M 300 56 H 356"></path>
+          <path d="M 476 56 H 532"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="34" width="100" height="44" rx="22"></rect>
+          <text x="74" y="60">Load</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="180" y="34" width="120" height="44" rx="22"></rect>
+          <text x="240" y="60">Trigger</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="356" y="34" width="120" height="44" rx="22"></rect>
+          <text x="416" y="60">Execute</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="532" y="34" width="100" height="44" rx="22"></rect>
+          <text x="582" y="60">Return</text>
+        </g>
+        <text class="loop-caption" x="320" y="116">from manifest to bundled multi-step execution</text>
+      </svg>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Load</strong>
+          <p>The runtime reads the skill directory: a manifest (name, description, triggering hints), a primary instruction file, and any bundled scripts, templates, or examples. The skill becomes a discoverable capability, not a hardcoded prompt.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Trigger</strong>
+          <p>The model decides the skill applies. This is the step that's genuinely different from function tools: the manifest's description does the matching, so the agent reaches for the skill when the situation looks like the situations it's been written for.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Execute</strong>
+          <p>The runtime hands the skill's instructions back to the model, with the bundled scripts and templates available as supporting context. The model follows the packaged procedure step by step — including any calls into ordinary function tools the skill declares as helpers.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Return</strong>
+          <p>The skill's output flows back into the session as a normal tool response. From the orchestration loop's perspective, the skill was a single capability invocation; from inside, it was a multi-step procedure with its own structure.</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="mechanism-note">
+      Function tools enforce <em>contracts</em>: a typed call, a typed result. Skills
+      enforce <em>method</em>: the same procedure, executed the same way each time.
+      The skill's manifest is what makes triggering reliable — vague descriptions
+      produce vague matching.
+    </p>
 
     <figure class="code-card code-card--standalone">
       <figcaption>
@@ -76,13 +141,13 @@ root_agent = Agent(
       <Code code={skillToolsetCode} lang="python" theme="github-light" />
     </figure>
 
-    <div class="section-head compact-head" style="margin-top: 36px;">
+    <div class="section-head compact-head" style="margin-top: 48px;">
       <p class="eyebrow">Further reading</p>
       <h2>Official skills documentation.</h2>
     </div>
 
     <div class="refs-grid">
-      <article class="refs-block">
+      <a class="refs-block" href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview" target="_blank" rel="noreferrer">
         <span>Concept</span>
         <h3>Anthropic Agent Skills</h3>
         <p>
@@ -91,9 +156,9 @@ root_agent = Agent(
           invoke. Useful for understanding the shape and intent before
           looking at any one framework's implementation.
         </p>
-        <a href="https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview" target="_blank" rel="noreferrer">docs.claude.com/agent-skills <span aria-hidden="true">↗</span></a>
-      </article>
-      <article class="refs-block">
+        <div class="refs-link">docs.claude.com/agent-skills <span aria-hidden="true">↗</span></div>
+      </a>
+      <a class="refs-block" href="https://adk.dev/skills/" target="_blank" rel="noreferrer">
         <span>Implementation</span>
         <h3>Google ADK Skills</h3>
         <p>
@@ -102,8 +167,19 @@ root_agent = Agent(
           on disk and exposed to the agent through the standard tools
           interface. This is what the code sample above uses.
         </p>
-        <a href="https://adk.dev/skills/" target="_blank" rel="noreferrer">adk.dev/skills <span aria-hidden="true">↗</span></a>
-      </article>
+        <div class="refs-link">adk.dev/skills <span aria-hidden="true">↗</span></div>
+      </a>
+      <a class="refs-block" href="https://agentskills.io/home" target="_blank" rel="noreferrer">
+        <span>Open Standard</span>
+        <h3>Agent Skills</h3>
+        <p>
+          A lightweight, open standard designed to extend AI agents through 
+          structured workflows and progressive disclosure. It packages instructions, 
+          scripts, and reference material into portable, version-controlled folders 
+          for cross-product reuse.
+        </p>
+        <div class="refs-link">agentskills.io/home <span aria-hidden="true">↗</span></div>
+      </a>
     </div>
   </section>
 </SiteLayout>

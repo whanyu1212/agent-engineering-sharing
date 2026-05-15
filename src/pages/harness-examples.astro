@@ -1,7 +1,6 @@
 ---
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { url } from '../lib/url';
 
 const runnerCode = `from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -51,33 +50,172 @@ root_agent = Agent(
     ],
 )`;
 
-const hitlCode = `from google.adk import Workflow
+const hitlCode = `import hashlib
+import json
+import uuid
+
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr, ValidationError
+
+from google.adk import Workflow
 from google.adk.events import RequestInput
 
+
+class WorkflowStateCorruption(Exception):
+    """Raised when resume state is internally inconsistent — surfaces the
+    condition without firing a side effect so a retry-loop cannot amplify
+    the corruption. The workflow harness should park the run for repair.
+    """
+
+
+# Typed contract for the reviewer response. ADK does not coerce, AND we
+# don't want Pydantic to either — at a human-control boundary, "true", 1,
+# or "yes" must be malformed inputs, not coerced approvals. StrictBool +
+# strict mode rejects anything that isn't an actual bool / actual str.
+class ApprovalDecision(BaseModel):
+    model_config = ConfigDict(strict=True)
+    approved: StrictBool
+    notes: StrictStr = ""
+
+
+def _proposal_fingerprint(proposal):
+    # Content hash — NOT an idempotency key. It detects state drift across
+    # the pause; it cannot identify "this approval attempt" because two
+    # legitimate approvals for the same machine and alarm hash identically.
+    body = json.dumps(proposal, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(body).hexdigest()
+
+
 def propose_work_order(ctx):
-    return {
+    proposal = {
         "machine_id": "M-42",
         "alarm": "E118",
         "recommended_action": "replace pressure sensor",
     }
+    # Mint a durable operation id ONCE, at proposal time. This is the unique
+    # identity of THIS approval attempt and what create_work_order dedupes
+    # on. Retries of the same run reuse it; a later approval for the same
+    # machine gets a fresh one.
+    operation_id = str(uuid.uuid4())
+
+    # Carry the proposal, the operation id, and a content fingerprint
+    # through workflow state. RequestInput's payload is request context for
+    # the UI; only state survives the pause and resume.
+    ctx.state["pending_proposal"] = proposal
+    ctx.state["pending_operation_id"] = operation_id
+    ctx.state["pending_fingerprint"] = _proposal_fingerprint(proposal)
+    return proposal
+
 
 def request_supervisor_approval(proposal):
     yield RequestInput(
         message=f"Approve work order for {proposal['machine_id']}?",
         payload=proposal,
-        response_schema={"approved": "bool", "notes": "str"},
+        response_schema=ApprovalDecision.model_json_schema(),
     )
 
-def create_or_escalate(decision):
-    if decision["approved"]:
-        return create_work_order(decision)
-    return escalate_to_engineering(decision)
+
+def route_after_review(ctx, raw_response):
+    # The workflow may have resumed hours later — possibly more than once if
+    # an earlier resume crashed mid-flight. READ state, do not pop it: we
+    # only clear it after the terminal side effect durably completes.
+    proposal = ctx.state.get("pending_proposal")
+    operation_id = ctx.state.get("pending_operation_id")
+    fingerprint = ctx.state.get("pending_fingerprint")
+
+    # Recovery handle, SCOPED. 'last_operation_id' rescues the post-crash
+    # case where pending_operation_id was already cleared but the workflow
+    # is being asked to re-run the resume step. Only consult it when there
+    # is NO pending state at all — otherwise a partial rehydration of a new
+    # approval could pick up a previous approval's id and silently return
+    # its cached result.
+    no_pending_state = (
+        proposal is None and operation_id is None and fingerprint is None
+    )
+    if operation_id is None and no_pending_state:
+        operation_id = ctx.state.get("last_operation_id")
+
+    # No trustworthy operation_id → raise, never side-effect. An escalation
+    # here would page the on-call once per retry. Let the harness park the
+    # run for operator repair.
+    if operation_id is None:
+        raise WorkflowStateCorruption(
+            "approval resumed with no operation_id and no recovery handle"
+        )
+
+    # From here on we have an operation id, so every exit writes the
+    # terminal slot before returning. A retry that re-enters with the same
+    # id will hit the presence check below and short-circuit.
+    terminal_slot = f"terminal:{operation_id}"
+
+    # If a previous attempt already finished, return that result instead of
+    # firing the side effect again. Use PRESENCE, not truthiness — a valid
+    # terminal result can be None, False, or {} and must still short-circuit.
+    if terminal_slot in ctx.state:
+        cached = ctx.state[terminal_slot]
+        ctx.state.pop("pending_proposal", None)
+        ctx.state.pop("pending_operation_id", None)
+        ctx.state.pop("pending_fingerprint", None)
+        return cached
+
+    # Partial rehydration: operation_id is here but the proposal is not.
+    # Do NOT side-effect on this path — escalating retry-loops into pages.
+    # Raise instead and let the harness park the run for operator repair.
+    if proposal is None or fingerprint is None:
+        raise WorkflowStateCorruption(
+            f"approval resumed with operation_id={operation_id!r} but no "
+            "proposal/fingerprint — operator must reconcile this run"
+        )
+    # Integrity check (see human-handoff page for trust-boundary caveats).
+    elif _proposal_fingerprint(proposal) != fingerprint:
+        result = escalate_to_engineering(
+            proposal,
+            operation_id=operation_id,
+            reason="proposal fingerprint mismatch on resume",
+        )
+    else:
+        # Validate the human response. Treat malformed input as its own
+        # branch — never index a dict you have not parsed.
+        try:
+            decision = ApprovalDecision.model_validate(raw_response)
+        except ValidationError as err:
+            result = escalate_to_engineering(
+                proposal,
+                operation_id=operation_id,
+                reason=f"malformed approval response: {err}",
+            )
+        else:
+            if decision.approved:
+                # create_work_order MUST treat operation_id as a dedupe
+                # token at its own boundary (DB unique constraint, ticket
+                # external_id, etc.). Without that, retries here can still
+                # duplicate downstream.
+                result = create_work_order(
+                    proposal, operation_id=operation_id, notes=decision.notes
+                )
+            else:
+                result = escalate_to_engineering(
+                    proposal,
+                    operation_id=operation_id,
+                    reason=decision.notes or "rejected",
+                )
+
+    # Record terminal status and pin 'last_operation_id' BEFORE clearing
+    # pending entries. If the workflow crashes anywhere in this tail, the
+    # next resume reaches the terminal slot (via the pointer if needed) and
+    # short-circuits.
+    ctx.state[terminal_slot] = result
+    ctx.state["last_operation_id"] = operation_id
+    ctx.state.pop("pending_proposal", None)
+    ctx.state.pop("pending_operation_id", None)
+    ctx.state.pop("pending_fingerprint", None)
+    return result
+
 
 root_agent = Workflow(
     name="maintenance_with_hitl",
     edges=[
         ("START", propose_work_order, request_supervisor_approval),
-        (request_supervisor_approval, create_or_escalate, "END"),
+        (request_supervisor_approval, route_after_review, "END"),
     ],
 )`;
 
@@ -149,9 +287,64 @@ const theme = 'github-light';
       </p>
     </div>
 
+    <div class="mini-diagram react-diagram harness-diagram" aria-label="ADK Components flow" style="margin-bottom: 48px; border-radius: 20px;">
+      <svg viewBox="0 0 1080 340" role="img">
+        <defs>
+          <marker id="adk-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)"></path>
+          </marker>
+        </defs>
+
+        <rect x="340" y="20" width="340" height="180" rx="20" fill="var(--surface-muted)" stroke="var(--accent)" stroke-width="2" stroke-dasharray="8 4"></rect>
+        <text x="510" y="50" text-anchor="middle" fill="var(--muted)" font-size="14" font-weight="700" letter-spacing="0.08em" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">THE HARNESS</text>
+
+        <g class="harness-links" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="8 8" style="animation: data-flow 1.5s linear infinite; opacity: 0.8;">
+          <path d="M 260 120 H 368" marker-end="url(#adk-arrow)"></path>
+          <path d="M 640 100 H 768" marker-end="url(#adk-arrow)"></path>
+          <path d="M 780 140 H 652" marker-end="url(#adk-arrow)"></path>
+          <path d="M 510 160 V 228" marker-end="url(#adk-arrow)"></path>
+        </g>
+
+        <style>
+          .adk-diagram-text { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; fill: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+          .adk-diagram-sub { font-size: 13px; font-weight: 600; fill: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+          .adk-diagram-label { font-size: 12px; font-weight: 600; fill: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+        </style>
+
+        <text x="314" y="110" class="adk-diagram-label" text-anchor="middle">load turn</text>
+        <text x="710" y="90" class="adk-diagram-label" text-anchor="middle">call tools</text>
+        <text x="710" y="165" class="adk-diagram-label" text-anchor="middle">return results</text>
+        <text x="525" y="200" class="adk-diagram-label" text-anchor="start">eval trace</text>
+
+        <g class="react-node-svg">
+          <rect x="40" y="80" width="220" height="80" rx="16"></rect>
+          <text x="150" y="114" class="adk-diagram-text" text-anchor="middle">SessionService</text>
+          <text x="150" y="138" class="adk-diagram-sub" text-anchor="middle">01 · Before model</text>
+        </g>
+
+        <g class="react-node-svg is-planner">
+          <rect x="380" y="80" width="260" height="80" rx="40"></rect>
+          <text x="510" y="114" class="adk-diagram-text" text-anchor="middle">Runner</text>
+          <text x="510" y="138" class="adk-diagram-sub" text-anchor="middle">All · Across turn</text>
+        </g>
+
+        <g class="react-node-svg is-critic">
+          <rect x="780" y="80" width="240" height="80" rx="40"></rect>
+          <text x="900" y="114" class="adk-diagram-text" text-anchor="middle">FunctionTool</text>
+          <text x="900" y="138" class="adk-diagram-sub" text-anchor="middle">02 · During tools</text>
+        </g>
+
+        <g class="react-node-svg is-done">
+          <rect x="380" y="240" width="260" height="80" rx="16"></rect>
+          <text x="510" y="274" class="adk-diagram-text" text-anchor="middle">AgentEvaluator</text>
+          <text x="510" y="298" class="adk-diagram-sub" text-anchor="middle">03 · After turn</text>
+        </g>
+      </svg>
+    </div>
+
     <article class="harness-row">
       <div class="harness-row__intro">
-        <span>Before model</span>
+        <span>01 · Before model</span>
         <h3>Runner + SessionService load the turn.</h3>
         <p>
           The <code>Runner</code> is the execution loop as an object. It joins an
@@ -171,7 +364,7 @@ const theme = 'github-light';
 
     <article class="harness-row">
       <div class="harness-row__intro">
-        <span>During tools</span>
+        <span>02 · During tools</span>
         <h3>Confirmations gate side-effecting calls.</h3>
         <p>
           Setting <code>require_confirmation=True</code> on a <code>FunctionTool</code>
@@ -191,14 +384,25 @@ const theme = 'github-light';
 
     <article class="harness-row">
       <div class="harness-row__intro">
-        <span>During tools <span class="beta-pill">ADK 2.0 beta</span></span>
-        <h3>Human-in-the-loop pauses turn into first-class workflow nodes.</h3>
+        <span>02 · During tools <span class="beta-pill">ADK 2.0 beta</span></span>
+        <h3>Workflow pauses become first-class human-input nodes in ADK 2.0 beta.</h3>
         <p>
           <code>require_confirmation</code> assumes the human answers in seconds.
           Real approvals — refund queues, change-management tickets, shift
-          handoffs — take hours. ADK 2.0's <code>RequestInput</code> node turns
-          the pause into a persisted workflow step that resumes from the event
-          log when the human responds, however long that takes.
+          handoffs — take hours. ADK 2.0 beta's <code>RequestInput</code> node
+          turns that pause into a persisted workflow step that can resume from
+          the event log when the human responds. Useful directionally, but still
+          beta rather than stable production guidance.
+        </p>
+        <p>
+          Note the saga-style cleanup: the resume node reads state with
+          <code>.get()</code>, hands a UUID <em>operation id</em> (not a
+          content hash — two valid approvals for the same machine would
+          collide) to <code>create_work_order</code> as a dedupe token,
+          checks the terminal slot by <em>presence</em> so a falsy result
+          still short-circuits, and only clears pending state <em>after</em>
+          recording terminal status. The human-handoff page walks through
+          why each of those three pieces matters.
         </p>
       </div>
       <figure class="code-card">
@@ -213,7 +417,7 @@ const theme = 'github-light';
 
     <article class="harness-row">
       <div class="harness-row__intro">
-        <span>After turn</span>
+        <span>03 · After turn</span>
         <h3>Eval files replay the trajectory as a test.</h3>
         <p>
           If a turn cannot be replayed, it cannot be trusted. ADK eval cases
@@ -233,7 +437,7 @@ const theme = 'github-light';
 
     <article class="harness-row">
       <div class="harness-row__intro">
-        <span>Across the turn</span>
+        <span>All · Across the turn</span>
         <h3>Events are the trace primitive.</h3>
         <p>
           Every user message, model response, tool call, tool result, and state
@@ -252,9 +456,6 @@ const theme = 'github-light';
       </figure>
     </article>
 
-    <a class="next-card" href={url('/codeact/')}>
-      <span>Next</span>
-      <strong>Onward to CodeAct: when the action <em>is</em> code</strong>
-    </a>
+
   </section>
 </SiteLayout>

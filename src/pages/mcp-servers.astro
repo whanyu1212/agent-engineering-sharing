@@ -1,0 +1,265 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const mcpCode = `import os
+from pathlib import Path
+
+from google.adk.agents import LlmAgent
+from google.adk.tools.mcp_tool import McpToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StdioConnectionParams,
+)
+from mcp import StdioServerParameters
+
+# Resolve the allowlisted directory relative to THIS module, not the
+# launching process's working directory. For a filesystem MCP server the
+# path IS the permission boundary — using os.path.abspath("./data") would
+# read from os.getcwd(), which depends on how the agent is launched.
+APP_ROOT = Path(__file__).resolve().parent
+KNOWLEDGE_DIR = (APP_ROOT / "data").resolve()
+if not KNOWLEDGE_DIR.is_dir():
+    raise RuntimeError(f"MCP filesystem root missing: {KNOWLEDGE_DIR}")
+
+# Invoke a LOCALLY INSTALLED server with explicit Node + entrypoint paths.
+# The MCP server subprocess runs with this agent's environment and
+# filesystem permissions, and tool_filter only limits what the model can
+# call — not what the subprocess can do.
+#
+# Don't reach for 'npx' here, even pinned: 'npx <pkg>@<ver>' still resolves
+# from the live registry at startup if the cache is cold, so availability,
+# yanked-package, and registry-compromise risk all stay in the runtime
+# path. Install the server at IMAGE BUILD time with a frozen lockfile.
+#
+# Avoid the node_modules/.bin shim too: it has a '/usr/bin/env node'
+# shebang, which means the subprocess searches PATH for 'node' at startup.
+# Resolve both pieces — the Node interpreter and the server's JavaScript
+# entrypoint — by absolute path. And do NOT discover Node via PATH or
+# shutil.which: a poisoned PATH can put an attacker-controlled 'node'
+# earlier in the search order. Pin the interpreter at image build time
+# (Dockerfile, supervisor config, etc.) and pass it through an env var
+# that points at a known absolute location.
+try:
+    _node_raw = os.environ["MCP_NODE_BIN"]
+except KeyError as exc:
+    raise RuntimeError(
+        "MCP_NODE_BIN must be set to the absolute path of a pinned Node "
+        "interpreter (e.g. /usr/local/bin/node) baked into the image."
+    ) from exc
+
+# Reject relative paths BEFORE calling .resolve(): a value like 'node' or
+# './node' would otherwise be silently joined with the agent process's CWD,
+# turning a misconfiguration into a cwd-controlled-binary execution.
+if not Path(_node_raw).is_absolute():
+    raise RuntimeError(
+        f"MCP_NODE_BIN must be an absolute path, got: {_node_raw!r}"
+    )
+try:
+    NODE_BIN = Path(_node_raw).resolve(strict=True)
+except FileNotFoundError as exc:
+    raise RuntimeError(f"MCP_NODE_BIN points at a missing file: {_node_raw}") from exc
+
+# Recommended additional checks before passing as 'command':
+#   - st = NODE_BIN.stat(); reject if not owned by root or world-writable
+#   - hash the binary and compare against an image build-time manifest
+#   - confirm it lives under an expected directory prefix (e.g. /usr/local)
+
+MCP_FILESYSTEM_ENTRY = (
+    APP_ROOT / "node_modules" / "@modelcontextprotocol"
+    / "server-filesystem" / "dist" / "index.js"
+).resolve()
+if not MCP_FILESYSTEM_ENTRY.is_file():
+    raise RuntimeError(
+        f"MCP server entrypoint missing: {MCP_FILESYSTEM_ENTRY} — install "
+        "with a frozen lockfile at image build time, not at startup."
+    )
+
+# Scrub the subprocess environment. Pinning the binary controls *what code*
+# runs; this controls *what authority* it runs with. A compromised or
+# overbroad MCP server inheriting the agent's ambient credentials
+# (cloud SDK tokens, DB URLs, vendor API keys) is its own incident. Pass
+# through only what the server needs. PATH is intentionally minimal
+# because we invoke Node by absolute path — nothing inside the subprocess
+# should be resolving binaries by name.
+SAFE_ENV = {
+    "PATH": "/usr/bin:/bin",
+    "HOME": str(APP_ROOT),
+    "LANG": "C.UTF-8",
+}
+
+mcp_filesystem = McpToolset(
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command=str(NODE_BIN),
+            args=[str(MCP_FILESYSTEM_ENTRY), str(KNOWLEDGE_DIR)],
+            env=SAFE_ENV,
+            cwd=str(KNOWLEDGE_DIR),
+        )
+    ),
+    tool_filter=["list_directory", "read_file"],
+)
+# Production hardening goes further: run the server as a dedicated
+# least-privilege OS user (or in its own container) with the allowlisted
+# directory mounted read-only. That's the real sandbox; everything above
+# is defense-in-depth around it.
+
+root_agent = LlmAgent(
+    model="gemini-2.5-flash",
+    name="knowledge_agent",
+    instruction=(
+        "Use the filesystem tools to verify documentation before answering."
+    ),
+    tools=[mcp_filesystem],
+)`;
+---
+
+<SiteLayout current="mcp-servers" title="MCP servers">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03F</p>
+      <h1>MCP servers expose shared capabilities through a standard interface.</h1>
+      <p>
+        Function tools are great when the integration lives inside your agent
+        app. MCP becomes useful when capabilities should be exposed from the
+        outside: one server, many agents, with tools and resources discoverable
+        through the same protocol boundary.
+      </p>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Interoperability</span>
+          <strong>One server can serve many agents.</strong>
+          <p>MCP is a shared interface pattern. Instead of re-implementing the same integration in every agent process, you expose it once and let multiple clients consume the same capabilities.</p>
+        </article>
+        <article>
+          <span>Resources too</span>
+          <strong>Not just actions, but readable context.</strong>
+          <p>MCP can expose tools, prompts, and resources. That matters because some integrations are not only about taking action; they also need to publish documents, handles, or structured data the agent can inspect.</p>
+        </article>
+        <article>
+          <span>Guardrails</span>
+          <strong>Filter and permission what the model sees.</strong>
+          <p>Treat discovery as a security surface. Expose only the tools the agent actually needs, keep auth outside the model, and avoid turning a large server into a generic escape hatch.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 40px;">
+      <p class="eyebrow">The protocol</p>
+      <h2>MCP adds a client-server layer between the agent and the capability.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="MCP protocol flow diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 124 56 H 180"></path>
+          <path d="M 300 56 H 356"></path>
+          <path d="M 476 56 H 532"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="34" width="100" height="44" rx="22"></rect>
+          <text x="74" y="60">Connect</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="180" y="34" width="120" height="44" rx="22"></rect>
+          <text x="240" y="60">Discover</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="356" y="34" width="120" height="44" rx="22"></rect>
+          <text x="416" y="60">Call</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="532" y="34" width="100" height="44" rx="22"></rect>
+          <text x="582" y="60">Return</text>
+        </g>
+        <text class="loop-caption" x="320" y="116">client-server layer proxies tools and resources</text>
+      </svg>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Connect</strong>
+          <p>The ADK runtime creates an MCP client connection to a local subprocess or remote endpoint and negotiates what the server can expose.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Discover</strong>
+          <p>The toolset reads the available tools and resources, then presents a bounded subset to the model. This is why filtering matters: discovery controls the agent's action surface.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Call or read</strong>
+          <p>When the model chooses a capability, ADK proxies that request through the MCP client. The model still sees a tool-like interface; the server owns the implementation.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Return observations</strong>
+          <p>The server responds with results that flow back into the loop as normal observations. From the agent's perspective, MCP is still part of the same decide-dispatch-respond cycle.</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="mechanism-note">
+      MCP is not a replacement for function tools. It is a deployment and
+      interoperability pattern for capabilities that live outside the current
+      agent process. Use plain function tools when the integration is local and
+      simple; use MCP when reuse, auth boundaries, or shared infrastructure
+      matter.
+    </p>
+
+    <p class="mechanism-note">
+      Two details in the snippet below are worth pausing on. First, for a
+      filesystem MCP server, the path you hand the server <em>is</em> the
+      permission boundary. Resolve it from the module file
+      (<code>Path(__file__)</code>), not from <code>os.path.abspath("./data")</code>
+       — the latter reads from the launching process's working directory, so
+      the directory the agent can see changes depending on how it was started.
+    </p>
+    <p class="mechanism-note">
+      Second, the <em>server binary itself</em> is inside the trust boundary.
+      <code>tool_filter</code> limits what the model can call; it does not
+      sandbox the subprocess, which runs with the agent's environment and
+      filesystem permissions. <code>npx</code> — even with a pinned version —
+      still resolves from the live registry on a cold cache, so availability,
+      yanked-package, and registry-compromise risk all stay in the runtime
+      path. Install the server at image build time with a frozen lockfile and
+      invoke the local binary by absolute path. Upgrades then look like any
+      other dependency bump, reviewed and locked before the agent ever runs.
+    </p>
+    <p class="mechanism-note">
+      Pinning is supply-chain control, not subprocess sandboxing. A pinned
+      but overbroad MCP server still inherits the agent process's ambient
+      authority — cloud SDK tokens, database URLs, vendor API keys — through
+      its environment, and it can read any path the agent process can. The
+      snippet scrubs the environment to a minimal allowlist and pins the
+      working directory; for real isolation, run the server as a dedicated
+      OS user (or in its own container) with only the allowlisted directory
+      mounted read-only. Treat the env-scrub as defense-in-depth; the
+      least-privilege user or container is the actual sandbox.
+    </p>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">google_adk_mcp_toolset.py</span>
+        <a href="https://adk.dev/tools-custom/mcp-tools/" target="_blank" rel="noreferrer">Google ADK docs</a>
+      </figcaption>
+      <Code code={mcpCode} lang="python" theme="github-light" />
+    </figure>
+  </section>
+</SiteLayout>

@@ -1,0 +1,141 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="cost-latency" title="Cost & latency engineering">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Chapter 05B</p>
+      <h1>Cost & latency engineering.</h1>
+      <p>
+        Agent quality is bounded by a budget envelope: dollars per task, p95
+        latency, and reliability under load. Treat these as first-class runtime
+        constraints, not post-hoc optimization chores.
+      </p>
+    </div>
+
+    <div class="mini-diagram react-diagram harness-diagram" aria-label="Cost, Latency, Quality trade-off" style="margin-bottom: 48px; margin-left: -40px; margin-right: -40px; border-radius: 20px;">
+      <svg viewBox="0 0 1080 360" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)"></path>
+          </marker>
+        </defs>
+        
+        <g class="react-links" fill="none" stroke="var(--accent)" stroke-width="3" stroke-dasharray="8 8" style="animation: data-flow 1.5s linear infinite; opacity: 0.8;">
+          <path d="M 320 150 H 408" marker-end="url(#react-arrow)"></path>
+          <path d="M 672 150 H 760" marker-end="url(#react-arrow)"></path>
+        </g>
+        
+        <style>
+          .tradeoff-text { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; fill: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+          .tradeoff-sub { font-size: 15px; font-weight: 600; fill: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+        </style>
+        
+        <g class="react-node-svg">
+          <rect x="40" y="100" width="280" height="100" rx="16"></rect>
+          <text x="180" y="142" class="tradeoff-text" text-anchor="middle">Cost Budget</text>
+          <text x="180" y="168" class="tradeoff-sub" text-anchor="middle">$/task cap</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="408" y="100" width="264" height="100" rx="50"></rect>
+          <text x="540" y="142" class="tradeoff-text" text-anchor="middle">Quality Floor</text>
+          <text x="540" y="168" class="tradeoff-sub" text-anchor="middle">eval pass rate</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="760" y="100" width="280" height="100" rx="16"></rect>
+          <text x="900" y="142" class="tradeoff-text" text-anchor="middle">Latency Budget</text>
+          <text x="900" y="168" class="tradeoff-sub" text-anchor="middle">p95 SLO limit</text>
+        </g>
+        
+        <text class="loop-caption" x="540" y="270" font-size="16">Optimize cost and latency only while maintaining the quality floor</text>
+      </svg>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Budget</span>
+          <strong>Cost budget</strong>
+          <p>Track token spend per turn, per successful task, and per workflow branch.</p>
+        </article>
+        <article>
+          <span>Performance</span>
+          <strong>Latency budget</strong>
+          <p>Measure p50/p95 end-to-end latency and break down model, tool, and network time.</p>
+        </article>
+        <article>
+          <span>Constraint</span>
+          <strong>Quality floor</strong>
+          <p>Only optimize cost/latency if eval pass rates and critical correctness checks stay stable.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">Practical levers</p>
+      <h2>High-impact optimizations in order.</h2>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Constrain turn shape</strong>
+          <p>Reduce unnecessary tool hops, cap retries, and keep the action loop shallow by default.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Right-size context</strong>
+          <p>Send only the minimum state and retrieval payload needed for the current decision.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Route by difficulty</strong>
+          <p>Use cheaper/faster models for easy turns and reserve premium models for hard branches.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Cache deterministically</strong>
+          <p>Memoize stable tool outputs, retrieval results, and reusable subplans with clear invalidation rules.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">05</span>
+        <div>
+          <strong>Parallelize safely</strong>
+          <p>Run independent tool calls concurrently, but preserve ordering where dependencies exist.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">Operating model</p>
+      <h2>Define hard boundaries for cost and performance.</h2>
+      <p>Instead of vague goals like "make it fast," establish explicit Service Level Objectives (SLOs) so the team knows exactly when an agent is too slow or too expensive to ship.</p>
+    </div>
+
+    <ul class="glossary-list" style="margin-bottom: 48px;">
+      <li>
+        <strong>Performance targets:</strong> Define a clear target for cost-per-task, p95 latency, and minimum eval pass rate. Treat these as strict launch requirements for each workflow.
+      </li>
+      <li>
+        <strong>Circuit breakers:</strong> Abort or fall back to a human when a run exceeds its maximum allowed turns, token count, or tool spend. Never let a stuck agent burn infinite budget.
+      </li>
+      <li>
+        <strong>Continuous validation:</strong> Run evals before and after any optimization changes. This ensures that making the agent "faster" or "cheaper" never silently means making it "worse."
+      </li>
+    </ul>
+
+    <p class="mechanism-note">
+      Rule of thumb: optimize the harness and context first, model size second.
+      Architecture-level wins compound faster than prompt-level micro-tuning.
+    </p>
+  </section>
+</SiteLayout>

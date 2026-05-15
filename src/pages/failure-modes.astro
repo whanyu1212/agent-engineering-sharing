@@ -1,0 +1,215 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="failure-modes" title="Failure-mode catalog">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Chapter 05C</p>
+      <h1>Failure-mode catalog.</h1>
+      <p>
+        Production agent quality is determined less by average-case outputs and
+        more by how quickly your system detects, contains, and recovers from
+        known failure classes.
+      </p>
+    </div>
+
+    <ul class="glossary-list" style="margin-top: 32px; margin-bottom: 48px;">
+      <li>
+        <strong>Plan failures:</strong> Wrong decomposition, missing dependencies, or non-terminating loops.
+      </li>
+      <li>
+        <strong>Tool failures:</strong> Wrong tool selection, bad argument schema, partial tool execution, or retries without backoff.
+      </li>
+      <li>
+        <strong>Grounding failures:</strong> Stale retrieval, low-signal context, or unsupported claims in final responses.
+      </li>
+      <li>
+        <strong>Context rot:</strong> The agent forgets the original user goal over a long trajectory because the conversation window exceeds the model's effective recall limit.
+      </li>
+      <li>
+        <strong style="color: #b3302a;">Prompt injection:</strong> Malicious user inputs or tainted retrieved documents cause the agent to deviate from its instructions and execute unauthorized actions.
+      </li>
+      <li>
+        <strong>Silent degradation:</strong> The agent completes the task but degrades in quality, tone, or formatting, eroding user trust over time without triggering hard errors.
+      </li>
+    </ul>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">Top production failures</p>
+      <h2>What breaks most often and what to do immediately.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Infinite loop diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)"></path>
+          </marker>
+          <marker id="error-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z" fill="rgba(179, 48, 42, 0.8)"></path>
+          </marker>
+        </defs>
+        <g class="react-links" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="6 6" style="animation: data-flow 1.5s linear infinite; opacity: 0.7;">
+          <path d="M 124 80 H 180" marker-end="url(#react-arrow)"></path>
+          <path d="M 300 80 H 356" marker-end="url(#react-arrow)"></path>
+          <!-- Infinite Loop Back -->
+          <path d="M 476 80 C 550 80, 550 20, 416 20 C 280 20, 280 80, 356 80" marker-end="url(#error-arrow)" stroke="rgba(179, 48, 42, 0.8)"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="58" width="100" height="44" rx="22"></rect>
+          <text x="74" y="84">Goal</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="180" y="58" width="120" height="44" rx="22"></rect>
+          <text x="240" y="84">Tool Call</text>
+        </g>
+        <g class="react-node-svg is-critic">
+          <rect x="356" y="58" width="120" height="44" rx="22" stroke="rgba(179, 48, 42, 0.8)" fill="rgba(179, 48, 42, 0.08)"></rect>
+          <text x="416" y="84" fill="#b3302a">Error</text>
+        </g>
+        <text class="loop-caption" x="416" y="140" fill="#b3302a">the dreaded infinite retry loop</text>
+      </svg>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Infinite or long-tail loops</strong>
+          <p>Add max-turn limits, dead-end detectors, and explicit stop criteria in the harness.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Wrong tool, right intent</strong>
+          <p>Constrain tool schemas, improve tool descriptions, and run tool-choice eval sets.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Right tool, wrong arguments</strong>
+          <p>Validate inputs, add typed contracts, and fail fast with actionable error messages.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Ungrounded final answers</strong>
+          <p>Require citation/trace evidence for critical outputs and reject unsupported claims.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">05</span>
+        <div>
+          <strong>Silent degradation over time</strong>
+          <p>Track eval drift, retrieval freshness, and trajectory anomalies as alertable metrics.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">Deep dives</p>
+      <h2>Three critical failure modes in detail.</h2>
+    </div>
+
+    <div class="example-intro">
+      <span class="example-intro__kicker pill-avoid">Failure Mode 01</span>
+      <h2>The Infinite Retry Loop</h2>
+      <p>The agent calls a tool, gets an error, and blindly retries with the exact same arguments. This burns tokens, spikes latency, and frustrates users.</p>
+    </div>
+    
+    <div class="practices-split">
+      <div class="practice-section practice-section--avoid">
+        <span class="tool-kind">Anti-pattern</span>
+        <h3>Blind retries</h3>
+        <ul>
+          <li><strong>Relying on the LLM.</strong> Assuming the model will naturally realize it's stuck.</li>
+          <li><strong>Raw traces.</strong> Returning raw stack traces that confuse the model instead of actionable summaries.</li>
+        </ul>
+      </div>
+      <div class="practice-section practice-section--do">
+        <span class="tool-kind">Solution</span>
+        <h3>Harness-level limits</h3>
+        <ul>
+          <li><strong>Hard caps.</strong> Implement a strict <code>max_turns</code> cap in your execution loop.</li>
+          <li><strong>Duplicate detection.</strong> Keep a hash of tool arguments; if the model repeats them, force an escalation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="example-intro" style="margin-top: 64px;">
+      <span class="example-intro__kicker pill-avoid">Failure Mode 02</span>
+      <h2>Context Rot</h2>
+      <p>As the session grows, early instructions or user goals get pushed out of the model's effective attention window. The agent becomes "distracted" by recent tool outputs.</p>
+    </div>
+    
+    <div class="practices-split">
+      <div class="practice-section practice-section--avoid">
+        <span class="tool-kind">Anti-pattern</span>
+        <h3>Infinite context appending</h3>
+        <ul>
+          <li><strong>Endless logs.</strong> Dumping every observation into context without summarization.</li>
+          <li><strong>Assuming perfect recall.</strong> Believing a 1M token window means 1M tokens of perfect, prioritized attention.</li>
+        </ul>
+      </div>
+      <div class="practice-section practice-section--do">
+        <span class="tool-kind">Solution</span>
+        <h3>Active state management</h3>
+        <ul>
+          <li><strong>Periodic checkpoints.</strong> Summarize the conversation history when it gets too long.</li>
+          <li><strong>Goal pinning.</strong> Pin the original user goal to the top of the system prompt on every single turn.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="example-intro" style="margin-top: 64px;">
+      <span class="example-intro__kicker pill-avoid">Failure Mode 03</span>
+      <h2>Ungrounded Synthesis</h2>
+      <p>The agent confidently asserts a fact that wasn't present in any retrieved document or tool observation.</p>
+    </div>
+    
+    <div class="practices-split">
+      <div class="practice-section practice-section--avoid">
+        <span class="tool-kind">Anti-pattern</span>
+        <h3>Loose grounding prompts</h3>
+        <ul>
+          <li><strong>Parametric fallback.</strong> Asking the model to "use your knowledge" as a fallback when tools fail.</li>
+          <li><strong>No escape hatch.</strong> Failing to provide explicit "I don't know" or "Escalate" paths.</li>
+        </ul>
+      </div>
+      <div class="practice-section practice-section--do">
+        <span class="tool-kind">Solution</span>
+        <h3>Strict citation constraints</h3>
+        <ul>
+          <li><strong>Mandatory citations.</strong> Require the model to cite the specific tool or document chunk for every claim.</li>
+          <li><strong>Continuous evals.</strong> Use an LLM-as-a-judge to evaluate grounding on a sample of production traces.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">Runbook checks</p>
+      <h2>Minimum controls before launch.</h2>
+    </div>
+
+    <ul class="glossary-list" style="margin-top: 32px; margin-bottom: 48px;">
+      <li>
+        <strong>Phase 1 · Detection:</strong> Trace-level signals for retries, loop depth, tool errors, and grounding gaps.
+      </li>
+      <li>
+        <strong>Phase 2 · Containment:</strong> Fallback modes, human handoff triggers, and blast-radius limits for unsafe branches.
+      </li>
+      <li>
+        <strong>Phase 3 · Recovery:</strong> Reproducible replay, root-cause tags, and evals that permanently guard against repeats.
+      </li>
+    </ul>
+
+    <p class="warning-note">
+      <strong>Critical:</strong> Don’t just collect incidents; encode each incident into a harness rule or
+      eval case so the same failure becomes mechanically harder to repeat.
+    </p>
+  </section>
+</SiteLayout>

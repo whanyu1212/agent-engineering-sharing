@@ -4,12 +4,12 @@ import { url } from '../lib/url';
 
 const {
   current = 'overview',
-  description = 'Opinionated agent engineering sharing by Hanyu.',
+  description = 'Opinionated agent engineering notes.',
   title = 'Opinionated Agent Engineering Sharing',
 } = Astro.props;
 
-const navItems = [
-  { key: 'overview', href: '/', label: 'Overview', kicker: 'Start' },
+const mainNavItems = [
+  { key: 'overview', href: '/', label: 'Overview', kicker: '' },
   { key: 'agent', href: '/what-is-agent/', label: 'What is an agent?', kicker: '01' },
   { key: 'context', href: '/session-state-memory/', label: 'Session, state, memory', kicker: '01A' },
   { key: 'orchestration', href: '/orchestration/', label: 'Design patterns', kicker: '02' },
@@ -17,12 +17,59 @@ const navItems = [
   { key: 'function-tools', href: '/function-tools/', label: 'Function tools', kicker: '03A' },
   { key: 'skills', href: '/skills/', label: 'Skills', kicker: '03B' },
   { key: 'code-execution', href: '/code-execution/', label: 'Code execution', kicker: '03C' },
+  { key: 'human-handoff', href: '/human-handoff/', label: 'Human handoff', kicker: '03D' },
+  { key: 'search-retrieval', href: '/search-retrieval/', label: 'Search & retrieval', kicker: '03E' },
+  { key: 'mcp-servers', href: '/mcp-servers/', label: 'MCP servers', kicker: '03F' },
+  { key: 'file-system-os', href: '/file-system-os/', label: 'File system & OS', kicker: '03G' },
+  { key: 'browser-computer-use', href: '/browser-computer-use/', label: 'Browser & computer use', kicker: '03H' },
   { key: 'eval-observability', href: '/eval-observability/', label: 'Eval & observability', kicker: '04' },
+  { key: 'agentic-evaluation', href: '/agentic-evaluation/', label: 'Agentic evaluation', kicker: '04A', badge: 'Soon' },
   { key: 'harness-engineering', href: '/harness-engineering/', label: 'Harness concept', kicker: '05' },
   { key: 'harness-examples', href: '/harness-examples/', label: 'ADK harness examples', kicker: '05A' },
-  { key: 'codeact', href: '/codeact/', label: 'CodeAct Deep Dive', kicker: '06' },
-  { key: 'codeact-ds-agent', href: '/codeact-ds-agent/', label: 'A specialized ML agent', kicker: '06A' },
+  { key: 'cost-latency', href: '/cost-latency/', label: 'Cost & latency engineering', kicker: '05B' },
+  { key: 'failure-modes', href: '/failure-modes/', label: 'Failure-mode catalog', kicker: '05C' },
 ];
+
+const bonusNavItems = [
+  { key: 'codeact', href: '/codeact/', label: 'CodeAct deep dive', kicker: '06' },
+  { key: 'codeact-ds-agent', href: '/codeact-ds-agent/', label: 'ML agent: a coding agent, specialized', kicker: '06A' },
+  { key: 'security-model', href: '/security-model/', label: 'Security & permission model', kicker: '06B' },
+  { key: 'rollout-lifecycle', href: '/rollout-lifecycle/', label: 'Rollout lifecycle', kicker: '06C' },
+  { key: 'resources', href: '/resources/', label: 'Useful resources', kicker: '07' },
+];
+
+const chapterFlow = [
+  { key: 'overview', href: '/', label: 'Overview' },
+  { key: 'agent', href: '/what-is-agent/', label: 'What is an agent?' },
+  { key: 'context', href: '/session-state-memory/', label: 'Session, state, memory' },
+  { key: 'orchestration', href: '/orchestration/', label: 'Design patterns' },
+  { key: 'practice', href: '/engineering-practice/', label: 'Tools & capability' },
+  { key: 'function-tools', href: '/function-tools/', label: 'Function tools' },
+  { key: 'skills', href: '/skills/', label: 'Skills' },
+  { key: 'code-execution', href: '/code-execution/', label: 'Code execution' },
+  { key: 'human-handoff', href: '/human-handoff/', label: 'Human handoff' },
+  { key: 'search-retrieval', href: '/search-retrieval/', label: 'Search & retrieval' },
+  { key: 'mcp-servers', href: '/mcp-servers/', label: 'MCP servers' },
+  { key: 'file-system-os', href: '/file-system-os/', label: 'File system & OS' },
+  { key: 'browser-computer-use', href: '/browser-computer-use/', label: 'Browser & computer use' },
+  { key: 'eval-observability', href: '/eval-observability/', label: 'Eval & observability' },
+  { key: 'agentic-evaluation', href: '/agentic-evaluation/', label: 'Agentic evaluation' },
+  { key: 'harness-engineering', href: '/harness-engineering/', label: 'Harness concept' },
+  { key: 'harness-examples', href: '/harness-examples/', label: 'ADK harness examples' },
+  { key: 'cost-latency', href: '/cost-latency/', label: 'Cost & latency engineering' },
+  { key: 'failure-modes', href: '/failure-modes/', label: 'Failure-mode catalog' },
+  { key: 'codeact', href: '/codeact/', label: 'CodeAct deep dive' },
+  { key: 'codeact-ds-agent', href: '/codeact-ds-agent/', label: 'ML agent: a coding agent, specialized' },
+  { key: 'security-model', href: '/security-model/', label: 'Security & permission model' },
+  { key: 'rollout-lifecycle', href: '/rollout-lifecycle/', label: 'Rollout lifecycle' },
+  { key: 'resources', href: '/resources/', label: 'Useful resources' },
+];
+
+const chapterIndex = chapterFlow.findIndex((chapter) => chapter.key === current);
+const prevChapter = chapterIndex > 0 ? chapterFlow[chapterIndex - 1] : null;
+const nextChapter = chapterIndex >= 0 && chapterIndex < chapterFlow.length - 1
+  ? chapterFlow[chapterIndex + 1]
+  : null;
 ---
 
 <html lang="en">
@@ -33,21 +80,32 @@ const navItems = [
     <title>{title}</title>
   </head>
   <body>
-    <div class="site-shell">
+    <div class="site-shell" id="site-shell">
       <aside class="side-nav" aria-label="Section navigation">
         <a class="brand" href={url('/')}>
-          <span>Hanyu's</span>
+          <span>Opinionated</span>
           <strong>Agent Engineering Notes</strong>
         </a>
         <nav>
-          {navItems.map((item) => (
+          {mainNavItems.map((item) => (
             <a
               class={current === item.key ? 'is-active' : ''}
               href={url(item.href)}
               aria-current={current === item.key ? 'page' : undefined}
             >
               <span>{item.kicker}</span>
-              <strong>{item.label}</strong>
+              <strong>{item.label}{item.badge && <span class="nav-badge">{item.badge}</span>}</strong>
+            </a>
+          ))}
+          <p class="nav-divider" aria-hidden="true">Optional</p>
+          {bonusNavItems.map((item) => (
+            <a
+              class={current === item.key ? 'is-active is-optional' : 'is-optional'}
+              href={url(item.href)}
+              aria-current={current === item.key ? 'page' : undefined}
+            >
+              <span>{item.kicker}</span>
+              <strong>{item.label}{item.badge && <span class="nav-badge">{item.badge}</span>}</strong>
             </a>
           ))}
         </nav>
@@ -68,9 +126,167 @@ const navItems = [
         </a>
       </aside>
 
+      <div
+        class="nav-resize-handle"
+        id="nav-resize-handle"
+        role="separator"
+        tabindex="0"
+        aria-label="Resize navigation"
+        aria-controls="site-shell"
+        aria-orientation="vertical"
+      ></div>
+
       <main class="content-shell">
         <slot />
+        {current !== 'overview' && (prevChapter || nextChapter) && (
+          <nav class="chapter-nav" aria-label="Chapter navigation">
+            {prevChapter ? (
+              <a class="chapter-nav__card chapter-nav__card--prev" href={url(prevChapter.href)}>
+                <span>Previous</span>
+                <strong>{prevChapter.label}</strong>
+              </a>
+            ) : (
+              <span class="chapter-nav__spacer" aria-hidden="true"></span>
+            )}
+            {nextChapter ? (
+              <a class="chapter-nav__card chapter-nav__card--next" href={url(nextChapter.href)}>
+                <span>Next</span>
+                <strong>{nextChapter.label}</strong>
+              </a>
+            ) : (
+              <span class="chapter-nav__spacer" aria-hidden="true"></span>
+            )}
+          </nav>
+        )}
       </main>
     </div>
+
+    <script>
+      // Resizable side-nav. Updates the --nav-width custom property on <html>
+      // (which the grid track and the handle's left position both read from)
+      // and persists the chosen width to localStorage so it survives reloads.
+      //
+      // Accessibility: implements the WAI-ARIA "Window Splitter" pattern.
+      // The handle is a role="separator" with aria-orientation="vertical"
+      // (meaning it moves horizontally), exposes its current width via
+      // aria-valuenow/min/max, and supports keyboard resize via arrow keys.
+      const STORAGE_KEY = 'nav-width';
+      const DEFAULT = 280;
+      const SNAP = 8;
+      const STEP = 16;
+      const STEP_LARGE = 48;
+
+      const root = document.documentElement;
+      const shell = document.getElementById('site-shell');
+      const handle = document.getElementById('nav-resize-handle');
+
+      // localStorage can throw SecurityError in private modes, sandboxed
+      // iframes, or storage-restricted browsers. Wrap every access so a
+      // denied/missing store degrades to "resize works, just doesn't
+      // persist" instead of breaking the whole script before handlers
+      // attach.
+      const safeGetItem = (key: string): string | null => {
+        try { return localStorage.getItem(key); } catch { return null; }
+      };
+      const safeSetItem = (key: string, value: string) => {
+        try { localStorage.setItem(key, value); } catch { /* persistence unavailable */ }
+      };
+      const safeRemoveItem = (key: string) => {
+        try { localStorage.removeItem(key); } catch { /* persistence unavailable */ }
+      };
+
+      const readVar = (name: string) => {
+        const raw = getComputedStyle(root).getPropertyValue(name).trim();
+        return parseFloat(raw) || 0;
+      };
+      const MIN = readVar('--nav-width-min');
+      const MAX = readVar('--nav-width-max');
+
+      const clamp = (value: number) => Math.min(MAX, Math.max(MIN, value));
+
+      // Single setter so pointer and keyboard paths converge — keeps
+      // aria-valuenow in lockstep with the rendered width.
+      const applyWidth = (value: number, persist = false) => {
+        const width = clamp(value);
+        root.style.setProperty('--nav-width', `${width}px`);
+        handle?.setAttribute('aria-valuenow', String(Math.round(width)));
+        if (persist) safeSetItem(STORAGE_KEY, String(width));
+      };
+
+      const resetWidth = () => {
+        root.style.removeProperty('--nav-width');
+        safeRemoveItem(STORAGE_KEY);
+        handle?.setAttribute('aria-valuenow', String(DEFAULT));
+      };
+
+      // Initialize ARIA bounds and restore any persisted width.
+      handle?.setAttribute('aria-valuemin', String(MIN));
+      handle?.setAttribute('aria-valuemax', String(MAX));
+      const saved = Number(safeGetItem(STORAGE_KEY));
+      if (saved && saved >= MIN && saved <= MAX) {
+        applyWidth(saved);
+      } else {
+        handle?.setAttribute('aria-valuenow', String(DEFAULT));
+      }
+
+      // Pointer (mouse / touch / stylus) — drag to resize.
+      let dragging = false;
+
+      handle?.addEventListener('pointerdown', (event: PointerEvent) => {
+        dragging = true;
+        shell?.classList.add('is-resizing');
+        handle.setPointerCapture(event.pointerId);
+      });
+
+      handle?.addEventListener('pointermove', (event: PointerEvent) => {
+        if (!dragging) return;
+        const raw = clamp(event.clientX);
+        const width = Math.abs(raw - DEFAULT) < SNAP ? DEFAULT : raw;
+        applyWidth(width);
+      });
+
+      const endDrag = (event: PointerEvent) => {
+        if (!dragging) return;
+        dragging = false;
+        shell?.classList.remove('is-resizing');
+        handle?.releasePointerCapture(event.pointerId);
+        const current = readVar('--nav-width');
+        if (current) safeSetItem(STORAGE_KEY, String(current));
+      };
+      handle?.addEventListener('pointerup', endDrag);
+      handle?.addEventListener('pointercancel', endDrag);
+
+      // Double-click resets to default.
+      handle?.addEventListener('dblclick', resetWidth);
+
+      // Keyboard — splitter pattern from WAI-ARIA Authoring Practices.
+      handle?.addEventListener('keydown', (event: KeyboardEvent) => {
+        const current = readVar('--nav-width') || DEFAULT;
+        const step = event.shiftKey ? STEP_LARGE : STEP;
+        switch (event.key) {
+          case 'ArrowLeft':
+            event.preventDefault();
+            applyWidth(current - step, true);
+            break;
+          case 'ArrowRight':
+            event.preventDefault();
+            applyWidth(current + step, true);
+            break;
+          case 'Home':
+            event.preventDefault();
+            applyWidth(MIN, true);
+            break;
+          case 'End':
+            event.preventDefault();
+            applyWidth(MAX, true);
+            break;
+          case 'Enter':
+          case 'Escape':
+            event.preventDefault();
+            resetWidth();
+            break;
+        }
+      });
+    </script>
   </body>
 </html>

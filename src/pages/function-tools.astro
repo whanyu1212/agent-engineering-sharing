@@ -33,39 +33,61 @@ root_agent = Agent(
       </p>
     </div>
 
-    <div class="detail-grid">
-      <article class="practice-section practice-section--do">
-        <span class="tool-kind">Use when</span>
-        <h3>The action is bounded.</h3>
-        <p>
-          The model should choose parameters, not invent the implementation.
-          Good examples: create ticket, check inventory, validate serial number,
-          calculate quote, or fetch machine status.
-        </p>
-      </article>
-      <article class="practice-section practice-section--do">
-        <span class="tool-kind">Design for</span>
-        <h3>Contracts and recovery.</h3>
-        <p>
-          Keep inputs typed, outputs structured, errors explicit, and side
-          effects idempotent. A failed tool call should become useful context
-          for the next decision.
-        </p>
-      </article>
-      <article class="practice-section practice-section--avoid">
-        <span class="tool-kind">Avoid</span>
-        <h3>Generic escape hatches.</h3>
-        <p>
-          A function named <code>do_task</code> with a raw prompt argument is
-          not a contract. Split it into smaller operations the system can test,
-          trace, retry, and permission.
-        </p>
-      </article>
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Use when</span>
+          <strong>The action is bounded.</strong>
+          <p>The model should choose parameters, not invent the implementation. Good examples: create ticket, check inventory, validate serial number, calculate quote, or fetch machine status.</p>
+        </article>
+        <article>
+          <span>Design for</span>
+          <strong>Contracts and recovery.</strong>
+          <p>Keep inputs typed, outputs structured, errors explicit, and side effects idempotent. A failed tool call should become useful context for the next decision.</p>
+        </article>
+        <article>
+          <span class="pill-avoid">Avoid</span>
+          <strong>Generic escape hatches.</strong>
+          <p>A function named <code>do_task</code> with a raw prompt argument is not a contract. Split it into smaller operations the system can test, trace, retry, and permission.</p>
+        </article>
+      </div>
     </div>
 
     <div class="section-head compact-head" style="margin-top: 40px;">
       <p class="eyebrow">The protocol</p>
       <h2>How a function tool call actually flows.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Tool call flow diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 124 56 H 180"></path>
+          <path d="M 300 56 H 356"></path>
+          <path d="M 476 56 H 532"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="34" width="100" height="44" rx="22"></rect>
+          <text x="74" y="60">Setup</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="180" y="34" width="120" height="44" rx="22"></rect>
+          <text x="240" y="60">Decision</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="356" y="34" width="120" height="44" rx="22"></rect>
+          <text x="416" y="60">Dispatch</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="532" y="34" width="100" height="44" rx="22"></rect>
+          <text x="582" y="60">Response</text>
+        </g>
+        <text class="loop-caption" x="320" y="116">model only decides; runtime executes</text>
+      </svg>
     </div>
 
     <ul class="timeline-list">

@@ -1,7 +1,6 @@
 ---
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { url } from '../lib/url';
 
 const agentLoopCode = `while not done:
     context = build_context(state, memory, user_goal)
@@ -53,20 +52,56 @@ print(f"<<< Agent Response: {final_response_text or '[no final response emitted]
       <p class="eyebrow">Definition</p>
       <h1>Agents are models in a control loop.</h1>
       <p>
-        Prompting asks once. An agent keeps state, chooses tools, observes what
-        happened, and decides whether to continue.
+        Prompting asks once. An agent keeps state, chooses tools, observes
+        what happened, and decides whether to continue.
       </p>
+    </div>
+
+    <div class="section-head compact-head" id="compare-framings">
+      <p class="eyebrow">Compare the framings</p>
+      <h2>Four definitions of "agent," side by side.</h2>
+    </div>
+
+    <div class="signal-panel signal-panel--two signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Google</span>
+          <strong>Goal-seeking through observation and action.</strong>
+          <p>In its most fundamental form, a Generative AI agent can be defined as an application that attempts to achieve a goal by observing the world and acting upon it using the tools that it has at its disposal.</p>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 16px;">Wiesinger, Marlow &amp; Vuskovic, <em>Agents</em> (Google, 2024). <a href="https://www.kaggle.com/whitepaper-agents" target="_blank" rel="noreferrer" style="color: var(--accent); text-decoration: none;">Link</a></p>
+        </article>
+
+        <article>
+          <span>Hugging Face</span>
+          <strong>An AI model that reasons, plans, and interacts.</strong>
+          <p>An Agent is a system that leverages an AI model to interact with its environment in order to achieve a user-defined objective. It combines reasoning, planning, and the execution of actions (often via external tools) to fulfill tasks.</p>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 16px;"><em>What is an Agent?</em>, Hugging Face Agents Course. <a href="https://huggingface.co/learn/agents-course/unit1/what-are-agents" target="_blank" rel="noreferrer" style="color: var(--accent); text-decoration: none;">Link</a></p>
+        </article>
+
+        <article>
+          <span>Anthropic</span>
+          <strong>The LLM directs its own process.</strong>
+          <p>Systems where LLMs dynamically direct their own processes and tool usage, maintaining control over how they accomplish tasks.</p>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 16px;">Schluntz &amp; Zhang, <em>Building effective agents</em> (Anthropic, 2024). <a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noreferrer" style="color: var(--accent); text-decoration: none;">Link</a></p>
+        </article>
+
+        <article>
+          <span>OpenAI</span>
+          <strong>Independent execution on the user's behalf.</strong>
+          <p>Agents are systems that independently accomplish tasks on your behalf.</p>
+          <p style="font-size: 0.85rem; color: var(--muted); margin-top: 16px;">OpenAI, <em>A practical guide to building agents</em> (2025). <a href="https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf" target="_blank" rel="noreferrer" style="color: var(--accent); text-decoration: none;">Link</a></p>
+        </article>
+      </div>
     </div>
 
     <div class="agent-grid">
       <aside class="definition-card">
-        <span>LLM agent</span>
+        <span>Distilled definition</span>
         <p>
           A goal-directed program where an LLM repeatedly decides the next
           action, uses tools, reads observations, and updates state until the
           task is done.
         </p>
-        <small>Framing synthesized from Google Cloud and Hugging Face agent docs.</small>
       </aside>
 
       <div class="loop-diagram" aria-label="Agent execution loop">
@@ -109,14 +144,6 @@ print(f"<<< Agent Response: {final_response_text or '[no final response emitted]
 
           <text class="loop-caption" x="282" y="148">model decides every turn until done</text>
         </svg>
-
-        <ol class="loop-legend">
-          <li><strong>User goal</strong> — task arrives with state and context.</li>
-          <li><strong>Decide</strong> — model picks the next action from available tools.</li>
-          <li><strong>Act</strong> — tool, code, search, or API call runs.</li>
-          <li><strong>Observe</strong> — result and side effects return to state.</li>
-          <li><strong>Update or stop</strong> — apply changes, then continue or finish.</li>
-        </ol>
       </div>
     </div>
 
@@ -129,6 +156,11 @@ print(f"<<< Agent Response: {final_response_text or '[no final response emitted]
       <Code code={agentLoopCode} lang="python" theme="github-light" />
     </figure>
 
+    <p class="mechanism-note">
+      In production ADK, the same turn is event-driven — tool calls,
+      responses, and state deltas stream back as inspectable events.
+    </p>
+
     <figure class="code-card code-card--standalone">
       <figcaption>
         <span class="lang-pill">python</span>
@@ -137,10 +169,5 @@ print(f"<<< Agent Response: {final_response_text or '[no final response emitted]
       </figcaption>
       <Code code={runtimeCode} lang="python" theme="github-light" />
     </figure>
-
-    <a class="next-card" href={url('/session-state-memory/')}>
-      <span>Next</span>
-      <strong>Separate the thread, scratchpad, and long-term memory</strong>
-    </a>
   </section>
 </SiteLayout>

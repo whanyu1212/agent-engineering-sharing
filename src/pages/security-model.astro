@@ -1,0 +1,122 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="security-model" title="Security & permission model">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Optional 06B</p>
+      <h1>Security & permission model.</h1>
+      <p>
+        This is optional for getting started, but essential once agents can touch
+        real systems. The core principle is simple: least privilege by default,
+        explicit approval for risky actions.
+      </p>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Principle</span>
+          <strong>Least privilege</strong>
+          <p>Expose only the minimum tools and scopes needed for the current workflow.</p>
+        </article>
+        <article>
+          <span>Control</span>
+          <strong>Policy gates</strong>
+          <p>Require confirmation for irreversible, high-cost, or externally visible actions.</p>
+        </article>
+        <article>
+          <span>Visibility</span>
+          <strong>Audit trail</strong>
+          <p>Log who requested what, which tool executed, and what side effects occurred.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 56px;">
+      <p class="eyebrow">Permission layers</p>
+      <h2>Design permissions as a stack, not a single switch.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Permission layers flow diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 120 80 H 140" marker-end="url(#react-arrow)"></path>
+          <path d="M 244 80 H 264" marker-end="url(#react-arrow)"></path>
+          <path d="M 368 80 H 388" marker-end="url(#react-arrow)"></path>
+          <path d="M 492 80 H 512" marker-end="url(#react-arrow)"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="16" y="58" width="104" height="44" rx="22"></rect>
+          <text x="68" y="84">Identity</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="140" y="58" width="104" height="44" rx="22"></rect>
+          <text x="192" y="84">Tool</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="264" y="58" width="104" height="44" rx="22"></rect>
+          <text x="316" y="84">Data</text>
+        </g>
+        <g class="react-node-svg is-critic">
+          <rect x="388" y="58" width="104" height="44" rx="22"></rect>
+          <text x="440" y="84">Action</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="512" y="58" width="104" height="44" rx="22"></rect>
+          <text x="564" y="84">Review</text>
+        </g>
+        <text class="loop-caption" x="316" y="136">defense in depth across the agent stack</text>
+      </svg>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Identity layer</strong>
+          <p>Bind actions to user/service identity with scoped credentials and short-lived tokens.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Tool layer</strong>
+          <p>Allowlist tools per workflow and deny tools that are not explicitly required.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Data layer</strong>
+          <p>Segment sensitive data, redact by default, and enforce retrieval access boundaries.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Action layer</strong>
+          <p>Gate destructive operations (write/delete/send/publish) behind approval checks.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">05</span>
+        <div>
+          <strong>Review layer</strong>
+          <p>Retain trace artifacts for post-incident analysis, compliance, and policy iteration.</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="warning-note">
+      <strong>Caution:</strong> Security failures in agent systems are usually permission-design failures.
+      Keep capabilities narrow, approvals explicit, and logs complete.
+    </p>
+  </section>
+</SiteLayout>

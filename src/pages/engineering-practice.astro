@@ -15,59 +15,94 @@ import { url } from '../lib/url';
       </p>
     </div>
 
-    <div class="tools-grid">
-      <a class="tool-card is-featured" href={url('/function-tools/')}>
-        <span class="tool-star" aria-label="Deep dive">*</span>
-        <span class="tool-kind">Typed action</span>
-        <h3>Function tools</h3>
-        <p>
-          Small, explicit functions with schemas. Best for narrow actions like
-          creating a ticket, validating an order, or checking machine status.
-        </p>
+    <div class="tool-directory">
+      <a class="tool-row" href={url('/function-tools/')}>
+        <div class="tool-row__kicker">Typed action</div>
+        <div class="tool-row__content">
+          <h3>Function tools</h3>
+          <p>Small, explicit functions with schemas. Best for narrow actions like creating a ticket, validating an order, or checking machine status.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
       </a>
-      <article class="tool-card">
-        <span class="tool-kind">Shared interface</span>
-        <h3>MCP servers</h3>
-        <p>
-          External capability providers that expose tools, resources, and
-          prompts. Useful when integrations need auth, state, or reuse across
-          agents.
-        </p>
-      </article>
-      <a class="tool-card is-featured" href={url('/skills/')}>
-        <span class="tool-star" aria-label="Deep dive">*</span>
-        <span class="tool-kind">Packaged procedure</span>
-        <h3>Skills</h3>
-        <p>
-          Repeatable playbooks with instructions, scripts, templates, and
-          examples. Good for domain workflows that need consistent execution.
-        </p>
+      
+      <a class="tool-row" href={url('/mcp-servers/')}>
+        <div class="tool-row__kicker">Shared interface</div>
+        <div class="tool-row__content">
+          <h3>MCP servers</h3>
+          <p>External capability providers that expose tools, resources, and prompts. Useful when integrations need auth, state, or reuse across agents.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
       </a>
-      <a class="tool-card is-featured" href={url('/code-execution/')}>
-        <span class="tool-star" aria-label="Deep dive">*</span>
-        <span class="tool-kind">Runtime feedback</span>
-        <h3>Code execution</h3>
-        <p>
-          A sandbox for calculating, transforming files, running tests, and
-          inspecting repos. Powerful because observations are concrete.
-        </p>
+
+      <a class="tool-row" href={url('/skills/')}>
+        <div class="tool-row__kicker">Packaged playbook</div>
+        <div class="tool-row__content">
+          <h3>Skills</h3>
+          <p>Repeatable playbooks with instructions, scripts, templates, and examples. Good for domain workflows that need consistent execution.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
       </a>
-      <article class="tool-card">
-        <span class="tool-kind">Grounding</span>
-        <h3>Search and retrieval</h3>
-        <p>
-          Web search, docs lookup, vector search, and database queries. These
-          tools keep decisions tied to current or private information.
-        </p>
-      </article>
-      <article class="tool-card">
-        <span class="tool-kind">Control point</span>
-        <h3>Human handoff</h3>
-        <p>
-          Approval, review, escalation, and override are tools too. They keep
-          high-risk actions inside an inspectable operating model.
-        </p>
-      </article>
+
+      <a class="tool-row" href={url('/code-execution/')}>
+        <div class="tool-row__kicker">Runtime feedback</div>
+        <div class="tool-row__content">
+          <h3>Code execution</h3>
+          <p>A sandbox for calculating, transforming files, running tests, and inspecting repos. Powerful because observations are concrete.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <a class="tool-row" href={url('/search-retrieval/')}>
+        <div class="tool-row__kicker">Grounding</div>
+        <div class="tool-row__content">
+          <h3>Search and retrieval</h3>
+          <p>Web search, docs lookup, vector search, and database queries. These tools keep decisions tied to current or private information.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <a class="tool-row" href={url('/human-handoff/')}>
+        <div class="tool-row__kicker">Control point</div>
+        <div class="tool-row__content">
+          <h3>Human handoff</h3>
+          <p>Approval and review are control points too. In ADK, confirmation gates exist today, while longer-running workflow pauses are still part of the 2.0 beta.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <a class="tool-row" href={url('/file-system-os/')}>
+        <div class="tool-row__kicker">Local environment</div>
+        <div class="tool-row__content">
+          <h3>File system & OS</h3>
+          <p>Tools for reading, writing, grepping, and navigating local directories. Essential for coding agents to manipulate the codebase and environment directly.</p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
+      </a>
+
+      <a class="tool-row" href={url('/browser-computer-use/')}>
+        <div class="tool-row__kicker">UI automation</div>
+        <div class="tool-row__content">
+          <h3>Browser & computer use</h3>
+          <p>Interact with graphical UIs and control web browsers. <em>Note: We won't cover these in detail here as they are still relatively new and niche in general agentic development.</em></p>
+        </div>
+        <div class="tool-row__arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </div>
+      </a>
     </div>
   </section>
 </SiteLayout>

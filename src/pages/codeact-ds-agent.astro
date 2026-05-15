@@ -173,10 +173,10 @@ import joblib
 joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
 ---
 
-<SiteLayout current="codeact-ds-agent" title="A specialized ML coding agent">
+<SiteLayout current="codeact-ds-agent" title="ML Agent — a coding agent, specialized">
   <section class="section page-section">
     <div class="section-head">
-      <p class="eyebrow">A specialized ML coding agent</p>
+      <p class="eyebrow">ML Agent — a coding agent, specialized</p>
       <h1>Same workflow, two action shapes. CodeAct wins on every axis that matters.</h1>
       <p>
         The task is fixed: fetch a Kaggle dataset, clean it, fit a baseline
@@ -202,7 +202,7 @@ joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
           roundtrip.
         </p>
       </div>
-      <div class="compare-grid vs-grid">
+      <div class="code-grid vs-grid">
         <figure class="code-card vs-card vs-card--react">
           <figcaption>
             <span class="vs-pill vs-pill--react">ReAct · JSON tool calls</span>
@@ -232,7 +232,7 @@ joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
           new tools, no new schemas, no glue code.
         </p>
       </div>
-      <div class="compare-grid vs-grid">
+      <div class="code-grid vs-grid">
         <figure class="code-card vs-card vs-card--react">
           <figcaption>
             <span class="vs-pill vs-pill--react">ReAct · JSON tool calls</span>
@@ -264,7 +264,7 @@ joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
           one Python block; no extra turn is needed.
         </p>
       </div>
-      <div class="compare-grid vs-grid">
+      <div class="code-grid vs-grid">
         <figure class="code-card vs-card vs-card--react">
           <figcaption>
             <span class="vs-pill vs-pill--react">ReAct · JSON tool calls</span>
@@ -283,37 +283,32 @@ joblib.dump(model, "artifacts/churn_xgb_v1.joblib")`;
     </div>
 
     <div class="section-head compact-head" style="margin-top: 48px;">
-      <p class="eyebrow">The scoreboard</p>
-      <h2>By the numbers.</h2>
+      <p class="eyebrow">Comparison</p>
+      <h2>The scoreboard (illustrative).</h2>
     </div>
 
-    <div class="text-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+    <p class="mechanism-note">
+      These counts come from the worked example above. They are illustrative
+      structure and maintenance-cost comparisons, not a formal benchmark.
+    </p>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
       <div>
-        <span class="tool-kind">Turns</span>
-        <h3>17+ vs 3</h3>
-        <p>
-          <strong>ReAct:</strong> 17+ model turns across the workflow. Each turn is a network roundtrip and a fresh pass over the growing context.
-          <br/><br/>
-          <strong>CodeAct:</strong> 3 turns.
-        </p>
-      </div>
-      <div>
-        <span class="tool-kind">Tools shipped</span>
-        <h3>13+ vs 3</h3>
-        <p>
-          <strong>ReAct:</strong> 13+ purpose-built tools, each with a custom schema the developer must maintain.
-          <br/><br/>
-          <strong>CodeAct:</strong> 2 function tools (<code>kaggle_search</code>, <code>kaggle_download</code>) and 1 skill (<code>ml-baseline</code>).
-        </p>
-      </div>
-      <div>
-        <span class="tool-kind">Composition</span>
-        <h3>Bounded vs Open</h3>
-        <p>
-          <strong>ReAct:</strong> Can only combine operations the developer explicitly pre-wired into tools.
-          <br/><br/>
-          <strong>CodeAct:</strong> Combines anything pandas, sklearn, and the language can express.
-        </p>
+        <article>
+          <span>Turns</span>
+          <strong>17+ vs 3</strong>
+          <p><strong>ReAct:</strong> 17+ model turns across the workflow. Each turn is a network roundtrip and a fresh pass over the growing context.<br/><br/><strong>CodeAct:</strong> 3 turns.</p>
+        </article>
+        <article>
+          <span>Tools shipped</span>
+          <strong>13+ vs 3</strong>
+          <p><strong>ReAct:</strong> 13+ purpose-built tools, each with a custom schema the developer must maintain.<br/><br/><strong>CodeAct:</strong> 2 function tools (<code>kaggle_search</code>, <code>kaggle_download</code>) and 1 skill (<code>ml-baseline</code>).</p>
+        </article>
+        <article>
+          <span>Composition</span>
+          <strong>Bounded vs Open</strong>
+          <p><strong>ReAct:</strong> Can only combine operations the developer explicitly pre-wired into tools.<br/><br/><strong>CodeAct:</strong> Combines anything pandas, sklearn, and the language can express.</p>
+        </article>
       </div>
     </div>
 

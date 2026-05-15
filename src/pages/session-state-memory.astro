@@ -1,7 +1,6 @@
 ---
 import { Code } from 'astro:components';
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { url } from '../lib/url';
 
 const theme = 'github-light';
 
@@ -76,9 +75,41 @@ recall_agent = LlmAgent(
     instruction="Use memory when the user asks about past work.",
     tools=[load_memory],
 )`;
+
+const memoryEvalCode = `from google.adk.evaluation import AgentEvaluator
+from google.adk.memory import VertexAiRagMemoryService
+from google.adk.tools import load_memory
+
+memory_service = VertexAiRagMemoryService(
+    project="my-project",
+    location="us-central1",
+    rag_corpus="maintenance-corpus",
+)
+
+recall_agent = LlmAgent(
+    model="gemini-2.5-flash",
+    name="recall_agent",
+    instruction="Ground answers in retrieved memory.",
+    tools=[load_memory],
+)
+
+evaluator = AgentEvaluator(
+    agent=recall_agent,
+    eval_set_id="memory-rag-regression-v3",
+)
+
+# Keep regression checks explicit: retrieval must happen and be scoped.
+result = await evaluator.evaluate(
+    input_text="What did we decide last time for alarm E118?",
+    assertions=[
+        "tool_call:load_memory",
+        "retrieval_top_k<=5",
+        "no_unsupported_claims",
+    ],
+)`;
 ---
 
-<SiteLayout current="context" title="Session, State, and Memory">
+<SiteLayout current="context" title="Session, state, and memory">
   <section class="section page-section">
     <div class="section-head">
       <p class="eyebrow">Context model</p>
@@ -98,9 +129,9 @@ recall_agent = LlmAgent(
           </marker>
         </defs>
         <g class="context-diagram__links">
-          <path d="M 190 94 H 318"></path>
-          <path d="M 402 94 H 530"></path>
-          <path d="M 614 94 C 658 94, 658 148, 360 148 C 126 148, 126 124, 106 108"></path>
+          <path d="M 190 94 H 306" marker-end="url(#context-arrow)"></path>
+          <path d="M 402 94 H 518" marker-end="url(#context-arrow)"></path>
+          <path d="M 614 94 C 658 94, 658 148, 360 148 C 126 148, 126 124, 110 115" marker-end="url(#context-arrow)"></path>
         </g>
         <g class="context-node-svg context-node-svg--session">
           <rect x="22" y="42" width="168" height="72" rx="20"></rect>
@@ -135,42 +166,29 @@ recall_agent = LlmAgent(
       </li>
     </ul>
 
-    <div class="detail-grid">
-      <article class="detail-card concept-detail concept-detail--session">
-        <span class="tool-kind">session.events</span>
-        <h3>The audit trail.</h3>
-        <p>
-          A session stores the chronological <code>Event</code> list:
-          user messages, model responses, tool calls, tool responses, and
-          state deltas.
-        </p>
-      </article>
-      <article class="detail-card concept-detail concept-detail--state">
-        <span class="tool-kind">session.state</span>
-        <h3>The live scratchpad.</h3>
-        <p>
-          State is for dynamic facts like task progress, selected entities,
-          preferences, and flags. Keep values serializable and shallow.
-        </p>
-      </article>
-      <article class="detail-card concept-detail concept-detail--memory">
-        <span class="tool-kind">MemoryService</span>
-        <h3>The archive is explicit.</h3>
-        <p>
-          ADK does not automatically make every past chat available. Your
-          app ingests sessions into memory, then an agent searches memory
-          through a tool such as <code>load_memory</code>.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">storage choice</span>
-        <h3>Persistence is a backend decision.</h3>
-        <p>
-          <code>InMemorySessionService</code> is for local testing and
-          loses data on restart. Database and Vertex AI services persist
-          sessions and state.
-        </p>
-      </article>
+    <div class="signal-panel signal-panel--two signal-panel--definitions" style="margin-top: 32px;">
+      <div>
+        <article>
+          <span>session.events</span>
+          <strong>The audit trail.</strong>
+          <p>A session stores the chronological <code>Event</code> list: user messages, model responses, tool calls, tool responses, and state deltas.</p>
+        </article>
+        <article>
+          <span>session.state</span>
+          <strong>The live scratchpad.</strong>
+          <p>State is for dynamic facts like task progress, selected entities, preferences, and flags. Keep values serializable and shallow.</p>
+        </article>
+        <article>
+          <span>MemoryService</span>
+          <strong>The archive is explicit.</strong>
+          <p>ADK does not automatically make every past chat available. Your app ingests sessions into memory, then an agent searches memory through a tool such as <code>load_memory</code>.</p>
+        </article>
+        <article>
+          <span>Storage choice</span>
+          <strong>Persistence is a backend decision.</strong>
+          <p><code>InMemorySessionService</code> is for local testing and loses data on restart. Database and Vertex AI services persist sessions and state.</p>
+        </article>
+      </div>
     </div>
 
     <figure class="code-card code-card--standalone">
@@ -227,6 +245,68 @@ recall_agent = LlmAgent(
       <Code code={memoryCode} lang="python" theme={theme} />
     </figure>
 
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Reliability extension</p>
+      <h2>Memory evals and RAG failure patterns need explicit checks.</h2>
+      <p>
+        Treat memory and retrieval behavior as testable runtime behavior.
+        With ADK, you can enforce trajectory-level checks using
+        <code>AgentEvaluator</code> instead of relying on output-only spot checks.
+      </p>
+    </div>
+
+    <ul class="glossary-list">
+      <li>
+        <strong>Lost-in-the-middle recall:</strong> The right fact is retrieved but ignored because context is too long or poorly ordered. Guard with smaller top-k, reranking, and grounding assertions.
+      </li>
+      <li>
+        <strong>Memory drift:</strong> Stale or low-signal sessions pollute recall. Fix with ingestion rules: only promote stable facts and keep noisy intermediate payloads out.
+      </li>
+      <li>
+        <strong>Ungrounded synthesis:</strong> The agent answers beyond retrieved evidence. Add “retrieval happened” and “no unsupported claims” checks in your eval gates.
+      </li>
+    </ul>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">memory_rag_eval.py</span>
+        <span class="code-tag">AgentEvaluator + VertexAiRagMemoryService</span>
+      </figcaption>
+      <Code code={memoryEvalCode} lang="python" theme={theme} />
+    </figure>
+
+    <p class="mechanism-note">
+      Good memory is not “store more.” It is “store less but retrieve better,”
+      then enforce that behavior with trajectory-aware evals.
+    </p>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Context hazards</p>
+      <h2>Context confusion, rot, and poisoning are distinct failure modes.</h2>
+      <p>
+        These failures look similar in outputs but need different fixes in your
+        harness and context pipeline.
+      </p>
+    </div>
+
+    <ul class="glossary-list">
+      <li>
+        <strong>Context confusion:</strong> The model sees too much low-signal context and latches onto the wrong details. Fix with stricter retrieval filters, tighter top-k, and explicit context ordering.
+      </li>
+      <li>
+        <strong>Context rot:</strong> Summaries and carried state go stale across long runs, so the agent drifts from the current user goal. Fix with refresh checkpoints and periodic re-grounding against source evidence.
+      </li>
+      <li>
+        <strong>Context poisoning:</strong> Incorrect intermediate outputs re-enter memory and get treated as truth later. Fix by separating verified facts from provisional text and requiring provenance before promotion.
+      </li>
+    </ul>
+
+    <p class="mechanism-note">
+      Treat memory writes like production database writes: validate, tag source,
+      and only promote facts that survive verification.
+    </p>
+
     <div class="practices-split">
       <div class="practice-section practice-section--do">
         <span class="tool-kind">Do</span>
@@ -261,9 +341,6 @@ recall_agent = LlmAgent(
       </div>
     </div>
 
-    <a class="next-card" href={url('/orchestration/')}>
-      <span>Next</span>
-      <strong>Choose the control shape that runs over this context</strong>
-    </a>
+
   </section>
 </SiteLayout>

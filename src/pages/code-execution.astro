@@ -32,35 +32,106 @@ root_agent = Agent(
       </p>
     </div>
 
-    <div class="detail-grid">
-      <article class="detail-card">
-        <span>Use when</span>
-        <h3>The answer needs computation.</h3>
-        <p>
-          Reach for code execution when the task involves files, logs, tests,
-          charts, data cleaning, repo inspection, simulations, or any result
-          that should be checked rather than asserted.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span>Design for</span>
-        <h3>Sandboxed feedback.</h3>
-        <p>
-          Give the runtime clear working directories, resource limits, captured
-          output, and artifact paths. The observation should be short enough for
-          the model to use on the next turn.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span>Guard</span>
-        <h3>Side effects.</h3>
-        <p>
-          Separate read-only inspection from write actions. Treat network,
-          secrets, destructive commands, and production systems as explicit
-          permission boundaries.
-        </p>
-      </article>
+    <div class="signal-panel signal-panel--two signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Use when</span>
+          <strong>The answer needs computation.</strong>
+          <p>Reach for code execution when the task involves files, logs, tests, charts, data cleaning, repo inspection, simulations, or any result that should be checked rather than asserted.</p>
+        </article>
+        <article>
+          <span class="pill-avoid">Security</span>
+          <strong>Hermetic sandboxing is mandatory.</strong>
+          <p>Model-generated code can compromise local environments. Use hermetic sandboxes—blocking network access and API calls to prevent data exfiltration, with full environment cleanup across runs.</p>
+        </article>
+        <article>
+          <span>Guard</span>
+          <strong>Control side effects.</strong>
+          <p>Give the runtime clear working directories, resource limits, and truncated outputs. Treat network access, secrets, and destructive commands as explicit permission boundaries.</p>
+        </article>
+        <article>
+          <span>ADK Runtimes</span>
+          <strong>Leverage managed executors.</strong>
+          <p>Instead of building custom sandboxes, use ADK's integrations like the Vertex Code Interpreter Extension for data analysis, or the Vertex Gemini Enterprise code execution API for server-side safety.</p>
+        </article>
+      </div>
     </div>
+
+    <div class="section-head compact-head" style="margin-top: 40px;">
+      <p class="eyebrow">The protocol</p>
+      <h2>How a code-execution turn actually flows.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Code execution flow diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 124 56 H 180"></path>
+          <path d="M 300 56 H 356"></path>
+          <path d="M 476 56 H 532"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="34" width="100" height="44" rx="22"></rect>
+          <text x="74" y="60">Declare</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="180" y="34" width="120" height="44" rx="22"></rect>
+          <text x="240" y="60">Emit code</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="356" y="34" width="120" height="44" rx="22"></rect>
+          <text x="416" y="60">Sandbox</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="532" y="34" width="100" height="44" rx="22"></rect>
+          <text x="582" y="60">Observe</text>
+        </g>
+        <text class="loop-caption" x="320" y="116">model emits code; runtime executes securely</text>
+      </svg>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Declare the runtime</strong>
+          <p>The executor is configured on the agent — a sandbox resource, a working directory, resource limits, and what the environment is allowed to reach (network, filesystem, credentials). Unlike a function tool, the agent's action surface is "anything this runtime can run," so the bounds <em>are</em> the contract.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Dispatch the block</strong>
+          <p>The model emits a code block. The runtime executes it inside the sandbox with the declared limits applied. The model never touches the host process; it produces a string of code, and the executor decides whether and how to run it.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Observe</strong>
+          <p>Stdout, stderr, return values, and produced artifacts come back as a structured observation. Good runtimes truncate output so the next turn's context stays bounded — code that prints a million rows shouldn't blow the context window.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Recover or continue</strong>
+          <p>Tracebacks are useful feedback, not failures: the model reads them and tries again. This is the loop's superpower — concrete error messages produce sharper retries than schema-validation errors ever do.</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="mechanism-note">
+      Code execution is the tool form behind CodeAct (chapter 06): when the
+      executor is trusted, the model can compose actions inside one block
+      instead of one tool call per step. The runtime here is the same; what
+      changes upstream is whether the agent treats code as <em>one tool among
+      many</em> or as <em>the primary action shape</em>.
+    </p>
 
     <figure class="code-card code-card--standalone">
       <figcaption>

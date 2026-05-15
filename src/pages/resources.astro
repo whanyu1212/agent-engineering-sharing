@@ -1,0 +1,508 @@
+---
+import SiteLayout from '../layouts/SiteLayout.astro';
+---
+
+<SiteLayout current="resources" title="Useful resources">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Appendix 08</p>
+      <h1>Useful resources</h1>
+      <p>
+        A curated, opinionated list of papers, documentation, and courses to go
+        deeper into agent engineering. Organized as a practical learning path for
+        technical readers to move from core patterns to production systems.
+      </p>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Recommended path</p>
+      <h2>Follow this order for a technical deep dive.</h2>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Agent fundamentals</strong>
+          <p>Control loops, tool use, orchestration patterns, and what “effective” agent behavior looks like.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Runtime and context</strong>
+          <p>Frameworks and protocols (ADK, MCP, skills, context engineering) that make systems composable and maintainable.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Reliability</strong>
+          <p>Evals, benchmarking, reflection loops, and observability — the layer that makes agents production-safe.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Advanced practice</strong>
+          <p>Multi-agent state transfer, CodeAct, and hands-on agent courses for end-to-end implementation.</p>
+        </div>
+      </li>
+    </ul>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Stage 01</p>
+      <h2>Agent fundamentals.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noreferrer">
+        <span>Must read</span>
+        <h3>Building Effective Agents</h3>
+        <p>
+          A clear thesis on why simple, composable patterns often outperform
+          heavyweight autonomous designs in real-world systems.
+        </p>
+        <div class="refs-link">anthropic.com <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://huggingface.co/agents-course" target="_blank" rel="noreferrer">
+        <span>Hugging Face</span>
+        <h3>Agents Course</h3>
+        <p>
+          Practical track focused on planning, tool use, and implementation
+          details for modern agentic systems.
+        </p>
+        <div class="refs-link">huggingface.co/agents-course <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.philschmid.de/langgraph-gemini-2-5-react-agent" target="_blank" rel="noreferrer">
+        <span>Phil Schmid</span>
+        <h3>ReAct Agent from Scratch (Gemini + LangGraph)</h3>
+        <p>
+          A modern implementation-level walk-through of the canonical ReAct loop
+          with current model/runtime tooling.
+        </p>
+        <div class="refs-link">philschmid.de <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://cloud.google.com/use-cases/ai-agents" target="_blank" rel="noreferrer">
+        <span>Architecture</span>
+        <h3>Google Cloud Agents</h3>
+        <p>
+          High-level enterprise framing for deployment, grounding, and governance
+          around agent applications.
+        </p>
+        <div class="refs-link">cloud.google.com <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Stage 02</p>
+      <h2>Runtime, protocol, and context engineering.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://adk.dev/" target="_blank" rel="noreferrer">
+        <span>Framework</span>
+        <h3>Google ADK</h3>
+        <p>
+          Runtime primitives for event loops, state, tool calling, and evaluation
+          harnesses used across this deck.
+        </p>
+        <div class="refs-link">adk.dev <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://modelcontextprotocol.io/" target="_blank" rel="noreferrer">
+        <span>Protocol</span>
+        <h3>Model Context Protocol (MCP)</h3>
+        <p>
+          Open interface layer for connecting models to external tools, resources,
+          and data providers.
+        </p>
+        <div class="refs-link">modelcontextprotocol.io <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://agentskills.io/" target="_blank" rel="noreferrer">
+        <span>Standard</span>
+        <h3>Agent Skills</h3>
+        <p>
+          Lightweight specification for packaging repeatable workflows into
+          portable, version-controlled skill bundles.
+        </p>
+        <div class="refs-link">agentskills.io <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://huggingface.co/learn/context-course" target="_blank" rel="noreferrer">
+        <span>Hugging Face</span>
+        <h3>Context Course</h3>
+        <p>
+          Focused material for retrieval inputs, prompt structure, and preparing
+          high-signal model context.
+        </p>
+        <div class="refs-link">huggingface.co/learn/context-course <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://blog.langchain.dev/context-engineering/" target="_blank" rel="noreferrer">
+        <span>LangChain</span>
+        <h3>Context Engineering</h3>
+        <p>
+          Useful perspective on controlling context windows, tool exposure, and
+          retrieval payloads as agent systems scale.
+        </p>
+        <div class="refs-link">blog.langchain.dev <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.langchain.com/blog/context-management-for-deepagents" target="_blank" rel="noreferrer">
+        <span>LangChain</span>
+        <h3>Context Management for Deep Agents</h3>
+        <p>
+          Practical patterns for long-running agent workflows where summaries,
+          task state, and retrieval context can drift over time.
+        </p>
+        <div class="refs-link">langchain.com/blog <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://docs.langchain.com/oss/python/langchain/context-engineering" target="_blank" rel="noreferrer">
+        <span>LangChain Docs</span>
+        <h3>Context engineering docs</h3>
+        <p>
+          Implementation guidance for structuring context, reducing confusion,
+          and preventing low-signal context from degrading agent behavior.
+        </p>
+        <div class="refs-link">docs.langchain.com <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.philschmid.de/mcp-introduction" target="_blank" rel="noreferrer">
+        <span>Phil Schmid</span>
+        <h3>MCP Overview</h3>
+        <p>
+          Implementation-oriented introduction to MCP as the boundary between
+          agent runtimes and external capabilities.
+        </p>
+        <div class="refs-link">philschmid.de <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.philschmid.de/memory-in-agents" target="_blank" rel="noreferrer">
+        <span>Phil Schmid</span>
+        <h3>Memory in Agents</h3>
+        <p>
+          Practical architecture patterns for persistent memory and recall.
+        </p>
+        <div class="refs-link">philschmid.de <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://huggingface.co/learn/agents-course/unit2/smolagents/introduction" target="_blank" rel="noreferrer">
+        <span>Hugging Face</span>
+        <h3>smolagents introduction</h3>
+        <p>
+          A code-first mini track for lightweight agent implementations and rapid
+          experimentation.
+        </p>
+        <div class="refs-link">huggingface.co/learn/agents-course <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Memory systems</p>
+      <h2>Curated memory architecture, implementation, and safety references.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://arxiv.org/abs/2304.03442" target="_blank" rel="noreferrer">
+        <span>Concepts</span>
+        <h3>Generative Agents</h3>
+        <p>
+          Canonical memory architecture reference introducing memory streams,
+          reflection, and planning loops for agent behavior.
+        </p>
+        <div class="refs-link">arxiv.org/abs/2304.03442 <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://github.com/mem0ai/mem0" target="_blank" rel="noreferrer">
+        <span>Framework</span>
+        <h3>Mem0</h3>
+        <p>
+          Open-source memory layer for adding persistent, evolving memory to
+          assistants and agent systems.
+        </p>
+        <div class="refs-link">github.com/mem0ai/mem0 <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://blog.langchain.dev/langmem/" target="_blank" rel="noreferrer">
+        <span>Framework</span>
+        <h3>LangMem SDK (LangChain)</h3>
+        <p>
+          Official long-term memory SDK patterns for episodic and semantic memory
+          inside LangGraph-style agent loops.
+        </p>
+        <div class="refs-link">blog.langchain.dev/langmem <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.digitalocean.com/community/tutorials/langgraph-mem0-integration-long-term-ai-memory" target="_blank" rel="noreferrer">
+        <span>Implementation</span>
+        <h3>Long-term memory with Mem0 + LangGraph</h3>
+        <p>
+          Practical wiring guide for integrating persistent memory into cyclical
+          agent workflows.
+        </p>
+        <div class="refs-link">digitalocean.com/community/tutorials <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://github.com/sambanova/toolbench" target="_blank" rel="noreferrer">
+        <span>Benchmark</span>
+        <h3>ToolBench</h3>
+        <p>
+          Large-scale benchmark for tool-use sequencing and multi-step execution,
+          useful for memory-sensitive trajectory evaluation.
+        </p>
+        <div class="refs-link">github.com/sambanova/toolbench <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://huggingface.co/spaces/gaia-benchmark/leaderboard" target="_blank" rel="noreferrer">
+        <span>Benchmark</span>
+        <h3>GAIA benchmark</h3>
+        <p>
+          Real-world assistant benchmark where multi-step reasoning and memory
+          retention materially affect task completion quality.
+        </p>
+        <div class="refs-link">huggingface.co/spaces/gaia-benchmark <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://aclanthology.org/2025.acl-long.1227.pdf" target="_blank" rel="noreferrer">
+        <span>Privacy</span>
+        <h3>Unveiling Privacy Risks in LLM Agent Memory</h3>
+        <p>
+          ACL paper on leakage and misuse risks in persistent memory stores for
+          agentic systems.
+        </p>
+        <div class="refs-link">aclanthology.org/2025.acl-long.1227 <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://arxiv.org/html/2603.11768v1" target="_blank" rel="noreferrer">
+        <span>Governance</span>
+        <h3>Governing Evolving Memory in LLM Agents</h3>
+        <p>
+          Taxonomy of memory-corruption failure modes and governance patterns for
+          safe long-lived memory systems.
+        </p>
+        <div class="refs-link">arxiv.org/html/2603.11768v1 <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">RAG systems</p>
+      <h2>Curated resources for retrieval-augmented generation.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noreferrer">
+        <span>Fundamentals</span>
+        <h3>Retrieval-Augmented Generation (RAG) paper</h3>
+        <p>
+          The canonical paper that defined the modern retrieval + generation
+          architecture for knowledge-intensive tasks.
+        </p>
+        <div class="refs-link">arxiv.org/abs/2005.11401 <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.llamaindex.ai/blog/evaluating-the-ideal-chunk-size-for-a-rag-system-using-llamaindex-6207e54443f0" target="_blank" rel="noreferrer">
+        <span>Fundamentals</span>
+        <h3>Chunking strategy and retrieval quality</h3>
+        <p>
+          Practical analysis of how chunk size and overlap affect recall and
+          precision in real RAG pipelines.
+        </p>
+        <div class="refs-link">llamaindex.ai/blog <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://unstructured.io/blog/improving-retrieval-in-rag-with-reranking" target="_blank" rel="noreferrer">
+        <span>Fundamentals</span>
+        <h3>Reranking for better top-k precision</h3>
+        <p>
+          Hands-on guide to reranking as one of the highest-leverage retrieval
+          quality improvements in production.
+        </p>
+        <div class="refs-link">unstructured.io/blog <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.llamaindex.ai/blog/rag-is-dead-long-live-agentic-retrieval" target="_blank" rel="noreferrer">
+        <span>Agentic RAG</span>
+        <h3>From static RAG to agentic retrieval</h3>
+        <p>
+          Why single-shot retrieval is often insufficient and how agents can
+          route, iterate, and refine retrieval over multiple steps.
+        </p>
+        <div class="refs-link">llamaindex.ai/blog <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://github.com/asinghcsu/AgenticRAG-Survey" target="_blank" rel="noreferrer">
+        <span>Agentic RAG</span>
+        <h3>Agentic RAG survey</h3>
+        <p>
+          Curated survey repository covering multi-hop, corrective, and planning-
+          driven retrieval approaches.
+        </p>
+        <div class="refs-link">github.com/asinghcsu/AgenticRAG-Survey <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://docs.ragas.io/" target="_blank" rel="noreferrer">
+        <span>Evaluation</span>
+        <h3>Ragas documentation</h3>
+        <p>
+          Widely used framework for evaluating RAG pipelines with metrics for
+          answer quality, faithfulness, and context use.
+        </p>
+        <div class="refs-link">docs.ragas.io <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.trulens.org/trulens_eval/core_concepts_rag_triad/" target="_blank" rel="noreferrer">
+        <span>Evaluation</span>
+        <h3>TruLens RAG triad</h3>
+        <p>
+          Clear evaluation framework built around context relevance,
+          groundedness, and answer relevance.
+        </p>
+        <div class="refs-link">trulens.org <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://arize.com/docs/phoenix/cookbook/evaluation/evaluate-rag" target="_blank" rel="noreferrer">
+        <span>Evaluation</span>
+        <h3>Evaluate RAG with Arize Phoenix</h3>
+        <p>
+          Practical cookbook for tracing and scoring retrieval quality and
+          groundedness with observability in the loop.
+        </p>
+        <div class="refs-link">arize.com/docs/phoenix <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.redhat.com/en/blog/planning-design-your-production-grade-rag-system" target="_blank" rel="noreferrer">
+        <span>Operations</span>
+        <h3>Planning a production-grade RAG system</h3>
+        <p>
+          Covers freshness strategy, re-indexing, access controls, and operational
+          design concerns for enterprise deployment.
+        </p>
+        <div class="refs-link">redhat.com/en/blog <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://dev.to/gursharansingh/rag-in-production-what-breaks-after-launch-5912" target="_blank" rel="noreferrer">
+        <span>Operations</span>
+        <h3>RAG in production: what breaks after launch</h3>
+        <p>
+          High-signal operational checklist on drift, caching, invalidation, and
+          failure patterns seen in live systems.
+        </p>
+        <div class="refs-link">dev.to <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Stage 03</p>
+      <h2>Reliability: evals, reflection, and observability.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://blog.langchain.dev/benchmarking-agent-tool-use/" target="_blank" rel="noreferrer">
+        <span>LangChain</span>
+        <h3>Benchmarking Agent Tool Use</h3>
+        <p>
+          Practical methodology for measuring whether agents pick correct tools
+          and trajectories, not just plausible final text.
+        </p>
+        <div class="refs-link">blog.langchain.dev <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://blog.langchain.dev/reflection-agents/" target="_blank" rel="noreferrer">
+        <span>LangChain</span>
+        <h3>Reflection Agents</h3>
+        <p>
+          Concrete generate-critique-revise loops to improve output quality under
+          explicit rubrics.
+        </p>
+        <div class="refs-link">blog.langchain.dev <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.philschmid.de/testing-skills" target="_blank" rel="noreferrer">
+        <span>Phil Schmid</span>
+        <h3>Evaluating and Testing Agent Skills</h3>
+        <p>
+          A practical bridge from informal “vibe checks” to reproducible
+          skill-level evaluation workflows.
+        </p>
+        <div class="refs-link">philschmid.de <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://langfuse.com/" target="_blank" rel="noreferrer">
+        <span>Platform</span>
+        <h3>Langfuse</h3>
+        <p>
+          Open-source LLM engineering platform for traces, evaluations, prompt
+          management, and metrics.
+        </p>
+        <div class="refs-link">langfuse.com <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.comet.com/docs/opik" target="_blank" rel="noreferrer">
+        <span>Platform</span>
+        <h3>Opik</h3>
+        <p>
+          End-to-end open-source platform for evaluating, testing, and tracking
+          LLM and agent applications.
+        </p>
+        <div class="refs-link">comet.com/docs/opik <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://arize.com/phoenix/" target="_blank" rel="noreferrer">
+        <span>Platform</span>
+        <h3>Arize Phoenix</h3>
+        <p>
+          Observability + evaluation suite for trajectory inspection and
+          LLM-as-a-judge workflows.
+        </p>
+        <div class="refs-link">arize.com/phoenix <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Stage 04</p>
+      <h2>Advanced implementation and scaling patterns.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://arxiv.org/abs/2402.01030" target="_blank" rel="noreferrer">
+        <span>Research</span>
+        <h3>CodeAct Paper</h3>
+        <p>
+          "Executable Code is a General Action Space for Large Language Models."
+          A key reference for why code execution can outperform JSON actions.
+        </p>
+        <div class="refs-link">arxiv.org <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://blog.langchain.dev/command-a-new-tool-for-multi-agent-architectures-in-langgraph/" target="_blank" rel="noreferrer">
+        <span>LangChain</span>
+        <h3>Multi-agent communication with Command</h3>
+        <p>
+          Updated state-transfer patterns for specialist-agent coordination and
+          graph-based orchestration.
+        </p>
+        <div class="refs-link">blog.langchain.dev <span aria-hidden="true">↗</span></div>
+      </a>
+
+      <a class="refs-block" href="https://www.kaggle.com/learn/ai-agents" target="_blank" rel="noreferrer">
+        <span>Kaggle</span>
+        <h3>AI Agents Intensive</h3>
+        <p>
+          Hands-on practical track for building and evaluating agent workflows.
+        </p>
+        <div class="refs-link">kaggle.com/learn/ai-agents <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+
+    <p class="mechanism-note">
+      This page is intentionally living documentation. We can keep expanding it
+      as better benchmarks, courses, and production playbooks emerge.
+    </p>
+  </section>
+</SiteLayout>

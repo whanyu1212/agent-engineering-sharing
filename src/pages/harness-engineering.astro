@@ -1,6 +1,5 @@
 ---
 import SiteLayout from '../layouts/SiteLayout.astro';
-import { url } from '../lib/url';
 ---
 
 <SiteLayout current="harness-engineering" title="Harness engineering">
@@ -9,35 +8,98 @@ import { url } from '../lib/url';
       <p class="eyebrow">Runtime discipline</p>
       <h1>Harness engineering: where agents become software.</h1>
       <p>
-        Tracing tells you what happened. The harness is what makes sure
-        the next run stays inside the same enforced boundaries.
+        Tracing is the post-mortem. The harness is the runtime boundary that
+        enforces the same safety and logic rails on the next run.
       </p>
     </div>
 
-    <div class="harness-map" aria-label="Agent harness responsibility map">
-      <div class="harness-lane">
-        <span>Inputs</span>
-        <strong>User goal</strong>
-        <strong>Session state</strong>
-        <strong>Available tools</strong>
-      </div>
-      <div class="harness-core">
-        <span>Harness</span>
-        <h3>Controlled execution boundary</h3>
-        <div>
-          <strong>Build context</strong>
-          <strong>Route tools</strong>
-          <strong>Gate actions</strong>
-          <strong>Commit events</strong>
-          <strong>Stop or continue</strong>
-        </div>
-      </div>
-      <div class="harness-lane">
-        <span>Outputs</span>
-        <strong>Observations</strong>
-        <strong>Artifacts</strong>
-        <strong>Trace + eval data</strong>
-      </div>
+    <div class="mini-diagram react-diagram harness-diagram" aria-label="Agent harness responsibility map" style="margin-bottom: 48px; margin-left: -40px; margin-right: -40px; border-radius: 20px;">
+      <svg viewBox="0 0 1080 440" role="img">
+        <defs>
+          <marker id="harness-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)"></path>
+          </marker>
+        </defs>
+
+        <!-- Big Harness Container -->
+        <rect x="300" y="20" width="480" height="400" rx="24" fill="var(--surface-muted)" stroke="var(--accent)" stroke-width="2" stroke-dasharray="8 4"></rect>
+        <text x="540" y="60" text-anchor="middle" fill="var(--muted)" font-size="16" font-weight="700" letter-spacing="0.08em" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace">HARNESS BOUNDARY</text>
+
+        <!-- Connection Lines -->
+        <g class="harness-links" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-dasharray="8 8" style="animation: data-flow 1.5s linear infinite; opacity: 0.8;">
+          <!-- Inputs to boundary -->
+          <path d="M 220 114 H 298" marker-end="url(#harness-arrow)"></path>
+          <path d="M 220 220 H 298" marker-end="url(#harness-arrow)"></path>
+          <path d="M 220 326 H 298" marker-end="url(#harness-arrow)"></path>
+
+          <!-- Boundary to Outputs -->
+          <path d="M 780 114 H 858" marker-end="url(#harness-arrow)"></path>
+          <path d="M 780 220 H 858" marker-end="url(#harness-arrow)"></path>
+          <path d="M 780 326 H 858" marker-end="url(#harness-arrow)"></path>
+
+          <!-- Internal Flow -->
+          <path d="M 520 114 H 568" marker-end="url(#harness-arrow)"></path>
+          <path d="M 680 144 V 190" marker-end="url(#harness-arrow)"></path>
+          <path d="M 680 250 V 296" marker-end="url(#harness-arrow)"></path>
+          <path d="M 580 326 H 522" marker-end="url(#harness-arrow)"></path>
+          <path d="M 420 296 V 144" marker-end="url(#harness-arrow)"></path>
+        </g>
+
+        <!-- Node styles overrides to make them larger than default -->
+        <style>
+          .harness-diagram text { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+        </style>
+
+        <!-- Input Nodes -->
+        <g class="react-node-svg">
+          <rect x="20" y="84" width="200" height="60" rx="12"></rect>
+          <text x="120" y="114">User goal</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="20" y="190" width="200" height="60" rx="12"></rect>
+          <text x="120" y="220">Session state</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="20" y="296" width="200" height="60" rx="12"></rect>
+          <text x="120" y="326">Available tools</text>
+        </g>
+
+        <!-- Internal Nodes -->
+        <g class="react-node-svg is-planner">
+          <rect x="320" y="84" width="200" height="60" rx="30"></rect>
+          <text x="420" y="114">Build context</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="580" y="84" width="200" height="60" rx="30"></rect>
+          <text x="680" y="114">Route tools</text>
+        </g>
+        <g class="react-node-svg is-critic">
+          <rect x="580" y="190" width="200" height="60" rx="30"></rect>
+          <text x="680" y="220">Gate actions</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="580" y="296" width="200" height="60" rx="30"></rect>
+          <text x="680" y="326">Commit events</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="320" y="296" width="200" height="60" rx="30"></rect>
+          <text x="420" y="326">Stop / continue</text>
+        </g>
+
+        <!-- Output Nodes -->
+        <g class="react-node-svg">
+          <rect x="860" y="84" width="200" height="60" rx="12"></rect>
+          <text x="960" y="114">Observations</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="860" y="190" width="200" height="60" rx="12"></rect>
+          <text x="960" y="220">Artifacts</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="860" y="296" width="200" height="60" rx="12"></rect>
+          <text x="960" y="326">Trace + eval data</text>
+        </g>
+      </svg>
     </div>
 
     <p class="map-caption">
@@ -86,53 +148,52 @@ import { url } from '../lib/url';
     </div>
 
     <ol class="shift-track">
-      <li class="shift-stage">
+      <li class="shift-stage" data-step="1">
         <span class="shift-stage__kicker">Stage 01</span>
         <h3>Prompt engineering</h3>
         <p class="shift-stage__lede">Tune the words you send.</p>
         <ul>
-          <li>One model call, one carefully written prompt.</li>
-          <li>Failures look like wording problems; fixes are edits.</li>
-          <li>Caps out fast as soon as state, tools, or branches enter.</li>
+          <li><strong>One model call.</strong> One carefully written prompt.</li>
+          <li><strong>Wording problems.</strong> Failures look like wording problems; fixes are edits.</li>
+          <li><strong>Fragile scaling.</strong> Caps out fast as soon as state, tools, or branches enter.</li>
         </ul>
       </li>
       <li class="shift-arrow" aria-hidden="true">
-        <svg viewBox="0 0 60 24" role="presentation">
-          <path d="M 4 12 H 50"></path>
-          <path d="M 44 6 L 54 12 L 44 18"></path>
-        </svg>
+        <div class="shift-arrow__badge">
+          <svg viewBox="0 0 24 24" role="presentation">
+            <path d="M5 12h14m-6-6 6 6-6 6"></path>
+          </svg>
+        </div>
       </li>
-      <li class="shift-stage">
+      <li class="shift-stage" data-step="2">
         <span class="shift-stage__kicker">Stage 02</span>
         <h3>Context engineering</h3>
         <p class="shift-stage__lede">Build the right inputs.</p>
         <ul>
-          <li>Retrieval, memory, tool selection, schemas, examples.</li>
-          <li>Each turn assembles the context the model actually needs.</li>
-          <li>Failures move from wording to <em>what the model can see</em>.</li>
+          <li><strong>Dynamic assembly.</strong> Retrieval, memory, tool selection, schemas, examples.</li>
+          <li><strong>Just-in-time state.</strong> Each turn assembles the context the model actually needs.</li>
+          <li><strong>Visibility bugs.</strong> Failures move from wording to <em>what the model can see</em>.</li>
         </ul>
       </li>
       <li class="shift-arrow" aria-hidden="true">
-        <svg viewBox="0 0 60 24" role="presentation">
-          <path d="M 4 12 H 50"></path>
-          <path d="M 44 6 L 54 12 L 44 18"></path>
-        </svg>
+        <div class="shift-arrow__badge">
+          <svg viewBox="0 0 24 24" role="presentation">
+            <path d="M5 12h14m-6-6 6 6-6 6"></path>
+          </svg>
+        </div>
       </li>
-      <li class="shift-stage is-now">
+      <li class="shift-stage is-now" data-step="3">
         <span class="shift-stage__kicker">Stage 03 · here</span>
         <h3>Harness engineering</h3>
         <p class="shift-stage__lede">Make the runtime enforce it.</p>
         <ul>
-          <li>Approval gates, eval files, event logs, HITL pauses, trajectory checks.</li>
-          <li>Invariants live in code around the loop, not in the prompt.</li>
-          <li>Failures become regressions the team can test for.</li>
+          <li><strong>Control boundaries.</strong> Approval gates, eval files, event logs, HITL pauses, trajectory checks.</li>
+          <li><strong>Invariants in code.</strong> Logic lives around the loop, not in the prompt.</li>
+          <li><strong>Testable regressions.</strong> Failures become structural regressions the team can test for.</li>
         </ul>
       </li>
     </ol>
 
-    <a class="next-card" href={url('/harness-examples/')}>
-      <span>Next</span>
-      <strong>See it in Google ADK</strong>
-    </a>
+
   </section>
 </SiteLayout>

@@ -1,0 +1,479 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const confirmationCode = `from google.adk.agents import Agent
+from google.adk.tools import FunctionTool
+
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="maintenance_agent",
+    instruction=(
+        "Diagnose manufacturing issues. "
+        "Never create work orders without confirmation."
+    ),
+    tools=[
+        read_alarm_history,
+        fetch_sensor_window,
+        FunctionTool(create_work_order, require_confirmation=True),
+    ],
+)`;
+
+const handoffWorkflowCode = `import hashlib
+import json
+import uuid
+
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr, ValidationError
+
+from google.adk import Workflow
+from google.adk.events import RequestInput
+
+
+class WorkflowStateCorruption(Exception):
+    """Raised when resume state is internally inconsistent.
+
+    Surfaces an unrecoverable workflow condition without firing a side
+    effect, so a retry-loop does not amplify the corruption into pages or
+    duplicate work. The workflow harness should park the run for operator
+    repair, not auto-retry.
+    """
+
+
+# The schema the reviewer's UI must submit. ADK does not coerce the response,
+# AND we don't want Pydantic to either: at a human-control boundary, "true",
+# 1, or "yes" must be malformed inputs, not coerced approvals. StrictBool +
+# strict mode rejects anything that isn't an actual bool / actual str.
+class ApprovalDecision(BaseModel):
+    model_config = ConfigDict(strict=True)
+    approved: StrictBool
+    notes: StrictStr = ""
+
+
+def _proposal_fingerprint(proposal):
+    # Content hash of the proposal. NOT an idempotency key — it answers
+    # "did the proposal drift across the pause?", not "is this the same
+    # operation attempt?". Two legitimate approvals for the same machine and
+    # alarm would share this hash; that's why it cannot be the dedupe token.
+    body = json.dumps(proposal, sort_keys=True).encode("utf-8")
+    return hashlib.sha256(body).hexdigest()
+
+
+def propose_work_order(ctx):
+    proposal = {
+        "machine_id": "M-42",
+        "alarm": "E118",
+        "recommended_action": "replace pressure sensor",
+    }
+    # Mint a durable operation id ONCE, at proposal time. This is the unique
+    # identity of THIS approval attempt and is what create_work_order will
+    # dedupe on. A retry of the same workflow run reuses this id; a separate
+    # later approval for the same machine gets a fresh one.
+    operation_id = str(uuid.uuid4())
+
+    # Carry the proposal, the operation id, and a content fingerprint through
+    # workflow state. RequestInput's payload is request context for the
+    # reviewer UI; only state survives the pause and resume.
+    ctx.state["pending_proposal"] = proposal
+    ctx.state["pending_operation_id"] = operation_id
+    ctx.state["pending_fingerprint"] = _proposal_fingerprint(proposal)
+    return proposal
+
+
+def request_supervisor_approval(proposal):
+    yield RequestInput(
+        message=f"Approve work order for {proposal['machine_id']}?",
+        payload=proposal,
+        response_schema=ApprovalDecision.model_json_schema(),
+    )
+
+
+def route_after_review(ctx, raw_response):
+    # The workflow may have resumed hours later from a checkpoint, and may
+    # have ALREADY resumed once before a crash. READ state, do not pop it:
+    # we only clear it after the terminal side effect durably completes.
+    proposal = ctx.state.get("pending_proposal")
+    operation_id = ctx.state.get("pending_operation_id")
+    fingerprint = ctx.state.get("pending_fingerprint")
+
+    # Recovery handle, SCOPED. 'last_operation_id' rescues the post-crash
+    # case where pending_operation_id was already cleared but the workflow
+    # is being asked to re-run the resume step. We only fall back to it when
+    # there is NO pending state at all — otherwise a partial rehydration of
+    # a new approval (B) could pick up the previous approval's (A) id,
+    # short-circuit on terminal:A, and silently drop B.
+    no_pending_state = (
+        proposal is None and operation_id is None and fingerprint is None
+    )
+    if operation_id is None and no_pending_state:
+        operation_id = ctx.state.get("last_operation_id")
+
+    # If we STILL have no operation_id, we have nothing trustworthy to
+    # dedupe against. Do NOT side-effect — escalation here would page the
+    # on-call on every retry. Raise and let the harness park the run for
+    # operator repair. (Same rule applies one branch down to partial-
+    # rehydration: any corrupted-resume path raises, never escalates.)
+    if operation_id is None:
+        raise WorkflowStateCorruption(
+            "approval resumed with no operation_id and no recovery handle "
+            "— operator must reconcile this run"
+        )
+
+    # From here on we have an operation id, so every exit writes the
+    # terminal slot before returning. A retry that re-enters with the same
+    # id will hit the presence check below and short-circuit instead of
+    # re-firing any escalation or work-order side effect.
+    terminal_slot = f"terminal:{operation_id}"
+
+    # If a previous attempt already finished, return that result instead of
+    # running the side effect a second time. Use PRESENCE, not truthiness —
+    # a valid terminal result can be None, False, or {} and must still
+    # short-circuit the retry.
+    if terminal_slot in ctx.state:
+        cached = ctx.state[terminal_slot]
+        ctx.state.pop("pending_proposal", None)
+        ctx.state.pop("pending_operation_id", None)
+        ctx.state.pop("pending_fingerprint", None)
+        return cached
+
+    # Partial rehydration: operation_id is here but the proposal or
+    # fingerprint are not. Do NOT side-effect on this path — even an
+    # escalation here is a page that retries can re-fire, and we don't
+    # have a clean dedupe key tied to a *recovery event* (only to the
+    # operation_id, which is exactly what's untrusted at this point).
+    # Raise instead and let the workflow surface a non-side-effecting
+    # error for operator repair; the workflow harness should park the run
+    # rather than retry-loop on this branch.
+    if proposal is None or fingerprint is None:
+        raise WorkflowStateCorruption(
+            f"approval resumed with operation_id={operation_id!r} but no "
+            "proposal/fingerprint — operator must reconcile this run "
+            "before it can resume"
+        )
+    # Integrity check (see prose: bounds tampering, not adversarial trust).
+    elif _proposal_fingerprint(proposal) != fingerprint:
+        result = escalate_to_engineering(
+            proposal,
+            operation_id=operation_id,
+            reason="proposal fingerprint mismatch on resume",
+        )
+    else:
+        # Validate at the boundary. Treat malformed input as its own branch
+        # — never index a dict you have not parsed.
+        try:
+            decision = ApprovalDecision.model_validate(raw_response)
+        except ValidationError as err:
+            result = escalate_to_engineering(
+                proposal,
+                operation_id=operation_id,
+                reason=f"malformed approval response: {err}",
+            )
+        else:
+            if decision.approved:
+                # create_work_order MUST treat operation_id as a dedupe
+                # token at its own boundary (DB unique constraint, ticket
+                # external_id, etc.). Without that, retries here can still
+                # duplicate downstream.
+                result = create_work_order(
+                    proposal, operation_id=operation_id, notes=decision.notes
+                )
+            else:
+                result = escalate_to_engineering(
+                    proposal,
+                    operation_id=operation_id,
+                    reason=decision.notes or "rejected",
+                )
+
+    # Record terminal status BEFORE clearing pending entries, and KEEP the
+    # 'last_operation_id' pointer so a re-entry after cleanup can still find
+    # the cached result. If the workflow crashes anywhere in this tail, the
+    # next resume reaches the terminal slot (via the pointer if needed) and
+    # short-circuits.
+    ctx.state[terminal_slot] = result
+    ctx.state["last_operation_id"] = operation_id
+    ctx.state.pop("pending_proposal", None)
+    ctx.state.pop("pending_operation_id", None)
+    ctx.state.pop("pending_fingerprint", None)
+    return result
+
+
+root_agent = Workflow(
+    name="maintenance_with_hitl",
+    edges=[
+        ("START", propose_work_order, request_supervisor_approval),
+        (request_supervisor_approval, route_after_review, "END"),
+    ],
+)`;
+
+const uxEventLoopCode = `events = runner.run_async(
+    user_id=USER_ID,
+    session_id=SESSION_ID,
+    new_message=content,
+)
+
+async for event in events:
+    # Stream progress updates (tool calls, intermediate status)
+    # to the UI while the run is still active.
+    if not event.is_final_response():
+        render_progress(event)
+        continue
+
+    # Final response path: render completion state and stop spinner.
+    if event.content and event.content.parts:
+        render_final(event.content.parts[0].text)`;
+---
+
+<SiteLayout current="human-handoff" title="Human handoff">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03D</p>
+      <h1>Human handoff keeps high-risk actions inside a visible control loop.</h1>
+      <p>
+        Approval, escalation, override, and clarification are control points
+        too. They do not add more model capability; they add operating safety by
+        pausing the loop at moments where a human should inspect, decide, or
+        take over.
+      </p>
+      <p>
+        In ADK today, simple confirmation gates are the more established form.
+        Longer-running human pauses built with <code>RequestInput</code> belong
+        to the ADK 2.0 beta, so this page treats them as an emerging workflow
+        feature rather than stable production guidance.
+      </p>
+    </div>
+
+    <div class="mini-diagram handoff-diagram" aria-label="Human handoff loop">
+      <svg viewBox="0 0 520 188" role="img" aria-labelledby="handoff-title">
+        <title id="handoff-title">Human handoff loop: the agent proposes an action, the runtime pauses, a human approves or rejects, and control returns to the agent</title>
+        <defs>
+          <marker id="handoff-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 140 64 H 188"></path>
+          <path d="M 332 64 H 380"></path>
+          <path d="M 444 86 C 444 138, 76 138, 76 86"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="20" y="42" width="120" height="44" rx="22"></rect>
+          <text x="80" y="64">propose</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="188" y="42" width="144" height="44" rx="22"></rect>
+          <text x="260" y="64">pause</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="380" y="42" width="120" height="44" rx="22"></rect>
+          <text x="440" y="64">human</text>
+        </g>
+        <text class="loop-caption" x="260" y="166">runtime intercepts; human decides; agent resumes</text>
+      </svg>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Use when</span>
+          <strong>The cost of being wrong is high.</strong>
+          <p>Put a human in the loop before destructive writes, expensive actions, policy-sensitive steps, or decisions that need accountability beyond what the model should carry alone.</p>
+        </article>
+        <article>
+          <span>Design for</span>
+          <strong>Explicit pause and resume points.</strong>
+          <p>The runtime should capture what is being proposed, who needs to review it, what schema their response must follow, and how the agent resumes after approval, rejection, or escalation.</p>
+        </article>
+        <article>
+          <span class="pill-avoid">Avoid</span>
+          <strong>Using humans as a vague fallback.</strong>
+          <p>Do not hand off because the agent is poorly scoped. Reserve it for real control boundaries. If every small action needs approval, the workflow becomes slow without becoming safer.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Two levels of control</p>
+      <h2>Confirmation gates and workflow pauses solve different problems.</h2>
+      <p>
+        Both are human control points, but they operate at different runtime
+        depths. The distinction is mostly about persistence, latency, and
+        blast radius.
+      </p>
+    </div>
+
+    <div class="signal-panel signal-panel--two signal-panel--definitions" style="margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Established default</span>
+          <strong>Confirmation gate</strong>
+          <p>Intercept one risky side effect right before execution.</p>
+          <ul class="use-cases">
+            <li>Best for synchronous approvals on a single tool call.</li>
+            <li>Low-latency review path; the run is still local and short-lived.</li>
+            <li>Ideal when the proposal is simple: create, send, publish, delete.</li>
+          </ul>
+        </article>
+
+        <article>
+          <span>Workflow pause <span class="beta-pill" style="margin-left: 8px;">ADK 2.0 beta</span></span>
+          <strong>Workflow pause</strong>
+          <p>Persist the run, wait for typed human input, then resume.</p>
+          <ul class="use-cases">
+            <li>Best for reviews that may take minutes or hours.</li>
+            <li>Requires durable state, resume safety, and idempotent side effects.</li>
+            <li>Useful when approval can branch into reject, revise, or escalate.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+
+    <p class="mechanism-note">
+      A confirmation gate is the safer default to teach first. A workflow pause
+      is broader and more powerful, but it turns a single tool interception into
+      a persisted control loop with a much larger failure surface.
+    </p>
+
+    <p class="mechanism-note">
+      The full pattern: register the destructive tool with
+      <code>require_confirmation=True</code> and let the runtime gate the call
+      before it reaches your side-effecting code.
+    </p>
+
+    <figure class="code-card">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">adk_confirmation_gate.py</span>
+        <a href="https://adk.dev/tools-custom/function-tools/" target="_blank" rel="noreferrer">Google ADK docs</a>
+      </figcaption>
+      <Code code={confirmationCode} lang="python" theme="github-light" />
+    </figure>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Human factors / Agent UX</p>
+      <h2>Reliable agents need predictable interaction patterns for people.</h2>
+      <p>
+        A safe control boundary still fails if operators cannot understand what
+        the agent is doing, why it paused, or what decision is being requested.
+        UX is part of runtime safety, not a layer after engineering.
+      </p>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Progress visibility</span>
+          <strong>Stream intermediate events.</strong>
+          <p>Stream intermediate events during <code>run_async</code> so users can see active work rather than waiting on a silent spinner.</p>
+        </article>
+        <article>
+          <span>Decision clarity</span>
+          <strong>Show the blast radius.</strong>
+          <p>When pausing for approval, show the proposed action, blast radius, and required reviewer input schema in plain language.</p>
+        </article>
+        <article>
+          <span>Deterministic completion</span>
+          <strong>Sync UX with final state.</strong>
+          <p>Use <code>event.is_final_response()</code> as the UI completion signal so progress and final output states never conflict.</p>
+        </article>
+      </div>
+    </div>
+
+    <p class="mechanism-note">
+      The minimal UX contract: stream non-final events as progress, and treat
+      <code>is_final_response()</code> as the single signal that flips the UI
+      from "working" to "done."
+    </p>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">adk_event_ux_loop.py</span>
+        <span class="code-tag">run_async + is_final_response()</span>
+      </figcaption>
+      <Code code={uxEventLoopCode} lang="python" theme="github-light" />
+    </figure>
+
+    <p class="mechanism-note">
+      UX anti-pattern: ask for approval without showing the exact proposed side
+      effect. If the reviewer cannot answer "what happens if I click approve,"
+      the workflow is not production-safe yet.
+    </p>
+
+    <div class="section-head compact-head">
+      <p class="eyebrow">Workflow form <span class="beta-pill">ADK 2.0 beta</span></p>
+      <h2>For richer reviews, ADK 2.0 adds persisted human-input workflow steps.</h2>
+      <p>
+        This is closer to escalation than a yes/no prompt. The human can add
+        notes, reject with reasons, or route the case to another team while the
+        agent keeps the proposal and decision inside the same execution trace.
+        Treat this as beta-era architecture, not settled production guidance.
+      </p>
+      <p>
+        Three details to notice in the snippet below:
+      </p>
+      <ul class="glossary-list" style="margin-top: 16px; margin-bottom: 32px;">
+        <li>
+          <strong>Schema is a contract, not a coercion:</strong> <code>response_schema</code> is a contract the reviewer's UI must satisfy. The post-review node validates the payload through a typed model and has an explicit <em>malformed response</em> branch, because once a human pause spans hours, "the response will be well-formed" stops being a safe assumption.
+        </li>
+        <li>
+          <strong>State persists, payloads do not:</strong> The original proposal is written into <code>ctx.state</code>, not just passed as the request payload. The payload is request context for the reviewer's UI; it isn't a second argument to the resume node. If you need the proposal back after the pause, carry it through workflow state explicitly.
+        </li>
+        <li>
+          <strong>Resume nodes are crash-safe transactions:</strong> A long human pause expands the failure surface. If the workflow dies after clearing state but before recording completion, retries duplicate work or lose the proposal entirely.
+        </li>
+      </ul>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-bottom: 48px;">
+      <h3 style="border-bottom: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; margin: 0; padding: 12px 16px; text-transform: uppercase;">Three things that make resume logic safe</h3>
+      <div>
+        <article>
+          <span>Identity</span>
+          <strong>Mint a durable operation ID once.</strong>
+          <p>Use a UUID created at proposal time as the dedupe key. A content hash is only a fingerprint for drift detection, not an approval ID.</p>
+        </article>
+        <article>
+          <span>State</span>
+          <strong>Check presence, not truthiness.</strong>
+          <p>Test <code>terminal_slot in ctx.state</code> so valid results like <code>None</code>, <code>False</code>, or <code>&#123;&#125;</code> still short-circuit retries.</p>
+        </article>
+        <article>
+          <span>Commit order</span>
+          <strong>Record terminal, then clear pending.</strong>
+          <p>Every side-effecting branch should write the terminal record before removing pending proposal state, so a retry can safely stop.</p>
+        </article>
+      </div>
+    </div>
+
+    <p class="mechanism-note">
+      Read the snippet for the full shape — the three invariants above are the
+      load-bearing parts; everything else is plumbing around them.
+    </p>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">adk_human_handoff_workflow.py</span>
+        <a href="https://adk.dev/workflows/human-input/" target="_blank" rel="noreferrer">ADK 2.0 human input</a>
+      </figcaption>
+      <Code code={handoffWorkflowCode} lang="python" theme="github-light" />
+    </figure>
+
+    <p class="warning-note">
+      <strong>High-risk edge:</strong> if the workflow resumes without a
+      trustworthy <code>operation_id</code>, do <em>not</em> escalate or
+      side-effect. Raise <code>WorkflowStateCorruption</code> and park the
+      run for operator repair. Also note that the proposal fingerprint is a
+      bounds-checking aid, not a cryptographic trust boundary — adversarial
+      environments need HMAC/signatures and a separate reviewer-bound audit
+      trail.
+    </p>
+
+    <p class="mechanism-note">
+      The downstream systems must cooperate too:
+      <code>create_work_order</code> and
+      <code>escalate_to_engineering</code> both need to dedupe on the same
+      <code>operation_id</code>. Otherwise the workflow-level guard only
+      protects the edge, not the side effects behind it.
+    </p>
+  </section>
+</SiteLayout>

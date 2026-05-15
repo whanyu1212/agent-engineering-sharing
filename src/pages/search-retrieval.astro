@@ -1,0 +1,193 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const retrievalCode = `from google.adk.agents import Agent
+from google.adk.tools import load_memory
+
+def search_manuals(query: str, product_family: str | None = None) -> dict:
+    """Search indexed manuals and troubleshooting notes."""
+    matches = docs_index.search(
+        query=query,
+        product_family=product_family,
+        top_k=5,
+    )
+    return {
+        "results": [
+            {
+                "title": doc.title,
+                "snippet": doc.snippet,
+                "source": doc.source,
+            }
+            for doc in matches
+        ]
+    }
+
+root_agent = Agent(
+    model="gemini-2.5-flash",
+    name="grounded_support_agent",
+    instruction=(
+        "Use retrieval before giving operational advice. "
+        "Search manuals for current procedures and load memory when the user "
+        "asks about prior cases."
+    ),
+    tools=[search_manuals, load_memory],
+)`;
+---
+
+<SiteLayout current="search-retrieval" title="Search and retrieval">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03E</p>
+      <h1>Search and retrieval ground the agent in fresh evidence.</h1>
+      <p>
+        Memory is where information lives. Search and retrieval are how the
+        agent goes to get it. That makes them a tool form: the model chooses
+        when to fetch external or stored evidence instead of guessing from
+        weights alone.
+      </p>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Grounding</span>
+          <strong>Search public or changing sources.</strong>
+          <p>Use web search, docs lookup, or database queries when the answer depends on current facts, external references, or information that was never inside the model to begin with.</p>
+        </article>
+        <article>
+          <span>Retrieval</span>
+          <strong>Pull from private knowledge stores.</strong>
+          <p>Retrieval is the act of fetching the most relevant internal documents, tickets, manuals, or chunks from an indexed corpus so the next step is tied to company-specific evidence.</p>
+        </article>
+        <article>
+          <span>Recall</span>
+          <strong>Search memory explicitly.</strong>
+          <p>Past sessions do not magically stay in context. In ADK-style systems, memory becomes useful only when the agent calls a retrieval interface such as <code>load_memory</code>.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 40px;">
+      <p class="eyebrow">The loop</p>
+      <h2>Grounding is a retrieval workflow, not a single magic step.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Retrieval flow diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 124 56 H 180"></path>
+          <path d="M 300 56 H 356"></path>
+          <path d="M 476 56 H 532"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="34" width="100" height="44" rx="22"></rect>
+          <text x="74" y="60">Query</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="180" y="34" width="120" height="44" rx="22"></rect>
+          <text x="240" y="60">Fetch</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="356" y="34" width="120" height="44" rx="22"></rect>
+          <text x="416" y="60">Inject</text>
+        </g>
+        <g class="react-node-svg is-done">
+          <rect x="532" y="34" width="100" height="44" rx="22"></rect>
+          <text x="582" y="60">Answer</text>
+        </g>
+        <text class="loop-caption" x="320" y="116">turn request into query, fetch evidence, then act</text>
+      </svg>
+    </div>
+
+    <ul class="timeline-list">
+      <li>
+        <span class="timeline-number">01</span>
+        <div>
+          <strong>Form the query</strong>
+          <p>The agent turns the user request into something searchable: keywords, filters, entity names, time bounds, or a more retrieval-friendly rewrite.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">02</span>
+        <div>
+          <strong>Fetch candidates</strong>
+          <p>The runtime queries a search engine, vector index, document store, or memory service and returns a bounded set of relevant results instead of the whole archive.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">03</span>
+        <div>
+          <strong>Inject evidence</strong>
+          <p>The retrieved snippets become context for the next model step. Good systems keep this payload compact, because grounding that overflows the window stops being grounding.</p>
+        </div>
+      </li>
+      <li>
+        <span class="timeline-number">04</span>
+        <div>
+          <strong>Answer or act</strong>
+          <p>The model now reasons over evidence that is current, private, or previously stored. If confidence is still low, it can search again instead of pretending the first fetch was enough.</p>
+        </div>
+      </li>
+    </ul>
+
+    <p class="mechanism-note">
+      Search is the broad family: web, docs, SQL, vector, graph. Retrieval is
+      the narrower mechanic: fetch the most relevant evidence for this turn.
+      Memory is neither of those by itself; it is a store that becomes useful
+      only when the agent retrieves from it.
+    </p>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">google_adk_search_retrieval.py</span>
+        <a href="https://adk.dev/sessions/memory/" target="_blank" rel="noreferrer">Google ADK memory docs</a>
+      </figcaption>
+      <Code code={retrievalCode} lang="python" theme="github-light" />
+    </figure>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Further reading</p>
+      <h2>Grounding and retrieval references.</h2>
+    </div>
+
+    <div class="refs-grid">
+      <a class="refs-block" href="https://ai.google.dev/gemini-api/docs/google-search" target="_blank" rel="noreferrer">
+        <span>Web grounding</span>
+        <h3>Google Search grounding</h3>
+        <p>
+          A concrete example of search as a tool: the model asks for fresh
+          public information and receives grounded results instead of relying on
+          static pretraining alone.
+        </p>
+        <div class="refs-link">ai.google.dev/gemini-api/docs/google-search <span aria-hidden="true">↗</span></div>
+      </a>
+      <a class="refs-block" href="https://adk.dev/sessions/memory/" target="_blank" rel="noreferrer">
+        <span>Memory recall</span>
+        <h3>Google ADK Memory</h3>
+        <p>
+          The important ADK idea for this page: memory is explicit. Sessions can
+          be ingested into a memory service, then searched later through a tool
+          such as <code>load_memory</code>.
+        </p>
+        <div class="refs-link">adk.dev/sessions/memory <span aria-hidden="true">↗</span></div>
+      </a>
+      <a class="refs-block" href="https://cloud.google.com/generative-ai-app-builder/docs/enterprise-search-introduction" target="_blank" rel="noreferrer">
+        <span>Enterprise retrieval</span>
+        <h3>Vertex AI Search</h3>
+        <p>
+          A practical reference for retrieval over private corpora: indexing
+          internal documents, ranking relevant passages, and grounding answers
+          on organization-specific knowledge.
+        </p>
+        <div class="refs-link">cloud.google.com/.../enterprise-search-introduction <span aria-hidden="true">↗</span></div>
+      </a>
+    </div>
+  </section>
+</SiteLayout>

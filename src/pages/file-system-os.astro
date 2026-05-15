@@ -1,0 +1,157 @@
+---
+import { Code } from 'astro:components';
+import SiteLayout from '../layouts/SiteLayout.astro';
+
+const fsCode = `import os
+from pathlib import Path
+
+WORKSPACE_DIR = Path("/app/workspace").resolve()
+
+def safe_read_file(file_path: str) -> str:
+    """Read a file securely within the workspace."""
+    # 1. Resolve the requested path against the workspace
+    target_path = (WORKSPACE_DIR / file_path).resolve()
+
+    # 2. Path Jailing: Ensure it stays inside the workspace boundary.
+    # This prevents directory traversal attacks (e.g., "../../etc/passwd")
+    if not str(target_path).startswith(str(WORKSPACE_DIR)):
+        return "Error: Access denied. Path outside workspace."
+
+    # 3. Graceful fallback for missing files
+    if not target_path.is_file():
+        return f"Error: File not found at {file_path}"
+
+    try:
+        # Tip: Consider adding line-range limits here for large files!
+        return target_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return "Error: File is binary or not UTF-8 encoded."
+    except Exception as e:
+        return f"Error reading file: {str(e)}"`;
+---
+
+<SiteLayout current="file-system-os" title="File system & OS">
+  <section class="section page-section">
+    <div class="section-head">
+      <p class="eyebrow">Tool form 03G</p>
+      <h1>File system & OS operations.</h1>
+      <p>
+        Tools for reading, writing, grepping, and navigating local directories.
+        Essential for coding agents to manipulate the codebase and environment directly.
+      </p>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 40px;">
+      <p class="eyebrow">The workflow</p>
+      <h2>The Read-Edit-Verify loop.</h2>
+    </div>
+
+    <div class="mini-diagram react-diagram" aria-label="Read-Edit-Verify loop diagram" style="margin-bottom: 32px;">
+      <svg viewBox="0 0 640 160" role="img">
+        <defs>
+          <marker id="react-arrow" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+          <marker id="reflection-arrow-back" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4">
+            <path d="M0,0 L8,4 L0,8 Z"></path>
+          </marker>
+        </defs>
+        <g class="react-links">
+          <path d="M 124 56 H 180"></path>
+          <path d="M 300 56 H 356"></path>
+          <path d="M 476 56 H 532"></path>
+          <path class="reflection-feedback" d="M 582 78 C 582 130, 74 130, 74 78"></path>
+        </g>
+        <g class="react-node-svg">
+          <rect x="24" y="34" width="100" height="44" rx="22"></rect>
+          <text x="74" y="60">Explore</text>
+        </g>
+        <g class="react-node-svg">
+          <rect x="180" y="34" width="120" height="44" rx="22"></rect>
+          <text x="240" y="60">Read</text>
+        </g>
+        <g class="react-node-svg is-planner">
+          <rect x="356" y="34" width="120" height="44" rx="22"></rect>
+          <text x="416" y="60">Edit</text>
+        </g>
+        <g class="react-node-svg is-critic">
+          <rect x="532" y="34" width="100" height="44" rx="22"></rect>
+          <text x="582" y="60">Verify</text>
+        </g>
+        <text class="loop-caption reflection-label-back" x="320" y="146">fix errors and retry</text>
+      </svg>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">The primitives</p>
+      <h2>Three capabilities every coding agent needs.</h2>
+    </div>
+
+    <div class="signal-panel signal-panel--definitions" style="margin-top: 32px; margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Discovery</span>
+          <strong>Find the right files.</strong>
+          <p>Tools like <code>list_directory</code> and <code>glob</code>. Agents cannot guess paths—they must explore the workspace first to understand the structure before attempting reads.</p>
+        </article>
+        <article>
+          <span>Inspection</span>
+          <strong>Read efficiently.</strong>
+          <p>Tools like <code>read_file</code> and <code>grep</code>. It is vital to support reading specific line ranges; dumping a 5,000-line file into context will exhaust the window and distract the model.</p>
+        </article>
+        <article>
+          <span>Modification</span>
+          <strong>Edit surgically.</strong>
+          <p>Tools like <code>replace_string</code> or <code>create_file</code>. Avoid having the model rewrite entire files from scratch, as it wastes tokens and risks accidentally dropping unmodified functions.</p>
+        </article>
+      </div>
+    </div>
+
+    <div class="section-head compact-head" style="margin-top: 48px;">
+      <p class="eyebrow">Security</p>
+      <h2>Filesystem access is a massive security surface.</h2>
+    </div>
+
+    <div class="practices-split">
+      <div class="practice-section practice-section--do">
+        <span class="tool-kind">Do</span>
+        <ul>
+          <li>
+            <strong>Use ephemeral workspaces.</strong>
+            Copy code to a temporary directory before letting the agent touch it. If the agent corrupts the repo, the host system remains safe.
+          </li>
+          <li>
+            <strong>Jail the paths.</strong>
+            Resolve all requested paths relative to a strict workspace root, and explicitly reject any path that resolves outside of it (preventing <code>../../etc/passwd</code>).
+          </li>
+        </ul>
+      </div>
+      <div class="practice-section practice-section--avoid">
+        <span class="tool-kind">Avoid</span>
+        <ul>
+          <li>
+            <strong>Raw <code>bash</code> tools without limits.</strong>
+            Giving an agent root bash access is an invitation to delete the host. If you must provide shell access, run it in a containerized sandbox without network access.
+          </li>
+          <li>
+            <strong>Implicit creation.</strong>
+            Do not let edit tools implicitly create missing directories or files unless strictly requested, to prevent the agent from spraying files everywhere when lost.
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="mechanism-note">
+      A robust <code>read_file</code> implementation doesn't just call <code>open()</code>. It resolves the path, enforces a directory boundary, handles missing files gracefully, and returns concrete error messages the model can learn from.
+    </p>
+
+    <figure class="code-card code-card--standalone">
+      <figcaption>
+        <span class="lang-pill">python</span>
+        <span class="code-filename">safe_read_file.py</span>
+        <span class="code-tag">Path jailing example</span>
+      </figcaption>
+      <Code code={fsCode} lang="python" theme="github-light" />
+    </figure>
+  </section>
+</SiteLayout>

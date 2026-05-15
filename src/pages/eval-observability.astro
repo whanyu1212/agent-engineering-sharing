@@ -94,48 +94,51 @@ Return JSON:
       <p>
         Once agents can use tools, the engineering problem shifts from
         capability to confidence: can we see what happened, replay it, and
-        measure whether the agent behaved correctly?
+        measure whether the agent behaved correctly? <strong>Observability is
+        what you log; eval is what you assert.</strong>
       </p>
     </div>
 
-    <div class="feedback-grid">
-      <article class="feedback-card trace-card">
-        <span>Observability</span>
-        <h3>Trace every decision boundary.</h3>
-        <ul>
-          <li>User goal and retrieved context</li>
-          <li>Model reasoning summary and selected action</li>
-          <li>Tool name, arguments, latency, result, and error</li>
-          <li>Retries, fallbacks, approvals, and final response</li>
-        </ul>
-      </article>
+    <div class="signal-panel signal-panel--two signal-panel--definitions" style="margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Observability</span>
+          <strong>Trace every decision boundary.</strong>
+          <ul class="use-cases">
+            <li>User goal and retrieved context</li>
+            <li>Model reasoning summary and selected action</li>
+            <li>Tool name, arguments, latency, result, and error</li>
+            <li>Retries, fallbacks, approvals, and final response</li>
+          </ul>
+        </article>
 
-      <article class="feedback-card eval-card">
-        <span>Evaluation</span>
-        <h3>Test the behavior, not just the answer.</h3>
-        <ul>
-          <li>Did it choose the right tool?</li>
-          <li>Were the arguments valid and minimal?</li>
-          <li>Did it handle failure without hallucinating?</li>
-          <li>Did it stop, escalate, or ask a good question?</li>
-        </ul>
-      </article>
+        <article>
+          <span>Evaluation</span>
+          <strong>Test the behavior, not just the answer.</strong>
+          <ul class="use-cases">
+            <li>Did it choose the right tool?</li>
+            <li>Were the arguments valid and minimal?</li>
+            <li>Did it handle failure without hallucinating?</li>
+            <li>Did it stop, escalate, or ask a good question?</li>
+          </ul>
+        </article>
+      </div>
     </div>
 
-    <div class="signal-panel">
+    <div class="signal-panel signal-panel--definitions" style="margin-bottom: 48px;">
       <h3>What to measure</h3>
       <div>
         <article>
           <span>Task quality</span>
-          <strong>success rate, groundedness, completeness, user correction rate</strong>
+          <strong>Success rate, groundedness, completeness, user correction rate.</strong>
         </article>
         <article>
           <span>Tool behavior</span>
-          <strong>tool choice accuracy, schema errors, retry rate, side-effect safety</strong>
+          <strong>Tool choice accuracy, schema errors, retry rate, side-effect safety.</strong>
         </article>
         <article>
           <span>Runtime health</span>
-          <strong>latency, cost, token use, timeout rate, failure clusters</strong>
+          <strong>Latency, cost, token use, timeout rate, failure clusters.</strong>
         </article>
       </div>
     </div>
@@ -150,58 +153,39 @@ Return JSON:
       </p>
     </div>
 
-    <div class="detail-grid">
-      <article class="detail-card">
-        <span class="tool-kind">Trajectory</span>
-        <h3>Did it take the right path?</h3>
-        <p>
-          Compare expected and actual tool calls. ADK exposes this as
-          <code>tool_trajectory_avg_score</code>, with exact, in-order,
-          any-order, precision, recall, and single-tool variants as useful
-          mental models.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Arguments</span>
-        <h3>Were tool inputs correct?</h3>
-        <p>
-          Assert entity IDs, time windows, filters, and safety flags. A
-          correct tool with wrong args is usually worse than no tool call.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Response</span>
-        <h3>Did the final answer match?</h3>
-        <p>
-          ADK uses <code>response_match_score</code> for reference-response
-          similarity. Use it for stable answers; use judges for subjective
-          dimensions.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Safety</span>
-        <h3>Did it avoid forbidden actions?</h3>
-        <p>
-          Track unsafe tool calls, missing approvals, policy bypasses,
-          data leakage, and unsupported recommendations.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Runtime</span>
-        <h3>Did it stay healthy?</h3>
-        <p>
-          Measure latency, model calls, token use, cost, retries,
-          timeouts, tool errors, and fallback rate.
-        </p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Human loop</span>
-        <h3>Did people have to rescue it?</h3>
-        <p>
-          Track correction rate, escalation rate, approval latency, and
-          cases where humans reject or rewrite the agent's work.
-        </p>
-      </article>
+    <div class="signal-panel signal-panel--definitions" style="margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Trajectory</span>
+          <strong>Did it take the right path?</strong>
+          <p>Compare expected and actual tool calls. ADK exposes this as <code>tool_trajectory_avg_score</code>, with exact, in-order, any-order, precision, recall, and single-tool variants as useful mental models.</p>
+        </article>
+        <article>
+          <span>Arguments</span>
+          <strong>Were tool inputs correct?</strong>
+          <p>Assert entity IDs, time windows, filters, and safety flags. A correct tool with wrong args is usually worse than no tool call.</p>
+        </article>
+        <article>
+          <span>Response</span>
+          <strong>Did the final answer match?</strong>
+          <p>ADK uses <code>response_match_score</code> for reference-response similarity. Use it for stable answers; use judges for subjective dimensions.</p>
+        </article>
+        <article>
+          <span>Safety</span>
+          <strong>Did it avoid forbidden actions?</strong>
+          <p>Track unsafe tool calls, missing approvals, policy bypasses, data leakage, and unsupported recommendations.</p>
+        </article>
+        <article>
+          <span>Runtime</span>
+          <strong>Did it stay healthy?</strong>
+          <p>Measure latency, model calls, token use, cost, retries, timeouts, tool errors, and fallback rate.</p>
+        </article>
+        <article>
+          <span>Human loop</span>
+          <strong>Did people have to rescue it?</strong>
+          <p>Track correction rate, escalation rate, approval latency, and cases where humans reject or rewrite the agent's work.</p>
+        </article>
+      </div>
     </div>
 
     <div class="section-head compact-head">
@@ -215,26 +199,25 @@ Return JSON:
       </p>
     </div>
 
-    <div class="feedback-grid">
-      <article class="feedback-card eval-card">
-        <span>Good judge use</span>
+    <div class="practices-split" style="margin-bottom: 48px;">
+      <div class="practice-section practice-section--do">
+        <span class="tool-kind">Good judge use</span>
         <h3>Subjective but rubric-bound.</h3>
         <ul>
-          <li>Give the judge the user input, tool results, final answer, and rubric.</li>
-          <li>Ask for structured JSON scores, not free-form taste.</li>
-          <li>Sample failures for human review and recalibrate thresholds.</li>
+          <li><strong>Give the judge context.</strong> Provide the user input, tool results, final answer, and rubric.</li>
+          <li><strong>Structured output.</strong> Ask for structured JSON scores, not free-form taste.</li>
+          <li><strong>Calibrate.</strong> Sample failures for human review and recalibrate thresholds.</li>
         </ul>
-      </article>
-
-      <article class="feedback-card trace-card">
-        <span>Bad judge use</span>
+      </div>
+      <div class="practice-section practice-section--avoid">
+        <span class="tool-kind">Bad judge use</span>
         <h3>Replacing ground truth with vibes.</h3>
         <ul>
-          <li>Do not ask a judge whether the right tool was called; assert the event path.</li>
-          <li>Do not let the judge infer hidden facts that were not in the trace.</li>
-          <li>Do not ship a judge metric without examples of pass and fail cases.</li>
+          <li><strong>No objective questions.</strong> Do not ask a judge whether the right tool was called; assert the event path.</li>
+          <li><strong>No hidden facts.</strong> Do not let the judge infer hidden facts that were not in the trace.</li>
+          <li><strong>No blind metrics.</strong> Do not ship a judge metric without examples of pass and fail cases.</li>
         </ul>
-      </article>
+      </div>
     </div>
 
     <figure class="code-card code-card--standalone">
@@ -247,35 +230,32 @@ Return JSON:
     </figure>
 
     <div class="section-head compact-head">
-      <p class="eyebrow">Eval levels</p>
-      <h2>Run different tests at different speeds.</h2>
+      <p class="eyebrow">Offline vs online</p>
+      <h2>Split evals into offline (pre-release) and online (production).</h2>
       <p>
-        Fast checks should run on every change. Rich scenarios can run less
-        often. Production metrics keep watch after deployment.
+        Offline evals answer “is this safe to ship?” Online evals answer
+        “is this still healthy in real traffic?” You need both lanes.
       </p>
     </div>
 
-    <div class="detail-grid">
-      <article class="detail-card">
-        <span class="tool-kind">Unit</span>
-        <h3>Tool and prompt checks.</h3>
-        <p>Validate schemas, fixtures, prompt contracts, parser behavior, and error handling.</p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Trajectory</span>
-        <h3>One-turn agent behavior.</h3>
-        <p>Assert tool sequence, args, intermediate responses, and final answer for a single user turn.</p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Scenario</span>
-        <h3>Multi-turn workflow tests.</h3>
-        <p>Cover state carryover, retries, handoffs, approvals, and long-running paths.</p>
-      </article>
-      <article class="detail-card">
-        <span class="tool-kind">Online</span>
-        <h3>Production monitoring.</h3>
-        <p>Watch drift, latency, cost, tool failures, user corrections, and judge-score trends.</p>
-      </article>
+    <div class="signal-panel signal-panel--definitions" style="margin-bottom: 48px;">
+      <div>
+        <article>
+          <span>Offline (pre-release)</span>
+          <strong>Regression gates before deployment.</strong>
+          <p>Run deterministic checks in CI: schema/unit tests, trajectory replay, and scenario suites. Example: replay 100 alarm-diagnostic turns and fail the release if tool trajectory or groundedness regresses.</p>
+        </article>
+        <article>
+          <span>Online (in production)</span>
+          <strong>Live quality and drift monitoring.</strong>
+          <p>Track p95 latency, cost per task, tool-failure classes, and sampled judge scores on live traces. Example: score 1% of traffic for groundedness and auto-halt canary ramp if the trend drops.</p>
+        </article>
+        <article>
+          <span>Release policy</span>
+          <strong>Use explicit thresholds for go/no-go.</strong>
+          <p>Promote only when offline gates pass and online canary signals stay above floor for a fixed window. If critical metrics degrade, rollback first and investigate second.</p>
+        </article>
+      </div>
     </div>
 
     <div class="section-head compact-head">
@@ -297,7 +277,7 @@ Return JSON:
       <Code code={evalCaseCode} lang="json" theme="github-light" />
     </figure>
 
-    <div class="compare-grid">
+    <div class="code-grid">
       <figure class="code-card">
         <figcaption>
           <span class="lang-pill">json</span>
@@ -398,9 +378,6 @@ Return JSON:
       </div>
     </div>
 
-    <a class="next-card" href={url('/harness-engineering/')}>
-      <span>Next</span>
-      <strong>Where runtime behavior becomes a harness</strong>
-    </a>
+
   </section>
 </SiteLayout>
